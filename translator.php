@@ -2,7 +2,7 @@
 /*
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/blog/wp-plugins/wordpress-global-translator-plugin/
-Description: Dynamically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt)
+Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt)
 Version: 0.7.1
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
