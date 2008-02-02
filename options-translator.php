@@ -222,7 +222,7 @@ if($message!="") { ?>
 			
 <form name="test"></form>
 <div class="wrap">
-  <h2><?php _e('Global Translator ')?>0.7.1</h2>
+  <h2><?php _e('Global Translator ')?>0.7.2</h2>
   <form id="gltr_form" name="form1" method="post" action="<?php echo $location ?>">
   	<input type="hidden" name="stage" value="process" />
 
