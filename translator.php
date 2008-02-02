@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/blog/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt)
-Version: 0.7.1
+Version: 0.7.2
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -64,6 +64,9 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+0.7.1
+- Fixed other bug on building links for "Default Permalink Structure"
 
 0.7.1
 - Fixed bug "Call to a member function on a non-object in /[....]/query.php". 
@@ -473,19 +476,21 @@ function gltr_get_translated_url($language, $url)
       $url = BLOG_HOME . '/' . $language . '/' . $uri;
   } else {
     //REWRITEOFF
-    $pattern = '/(.*[&|\?]{1})lang=(' . LANGS_PATTERN . ')(.*)/';
+    $pattern1 = '/(.*)([&|\?]{1})lang=(' . LANGS_PATTERN . ')(.*)/';
+    $pattern2 = '/(.*[&|\?]{1})lang=(' . LANGS_PATTERN . ')(.*)/';
 
     if ($language == BASE_LANG) {
-      $url = preg_replace($pattern, '\\1\\3', $url);
+      $url = preg_replace($pattern1, '\\1\\4', $url);
     } else
-      if (preg_match($pattern, $url)) {
-        $url = preg_replace($pattern, '\\1lang=' . $language . '\\3', $url);
+      if (preg_match($pattern2, $url)) {
+        $url = preg_replace($pattern2, '\\1lang=' . $language . '\\3', $url);
       } else {
       	if (strpos($url,'?')===false)
           $url .= '?lang=' . $language;
         else
           $url .= '&lang=' . $language;
       }
+
   }
 
   return $url;
