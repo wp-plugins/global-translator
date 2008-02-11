@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 /* Credits:
-Special thanks also to Jason F. Irwin, Ibnu Asad, Ozh, ttancm, Fable and the many others who have provided feedback, spotted bugs, and suggested improvements.
+Special thanks also to Jason F. Irwin, Ibnu Asad, Ozh, ttancm, Fable, Satollo and the many others who have provided feedback, spotted bugs, and suggested improvements.
 */
 
 /* *****INSTRUCTIONS*****
@@ -65,12 +65,16 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 Change Log
 
-0.7.1
+0.7.2
 - Fixed other bug on building links for "Default Permalink Structure"
+- Optimized translation flags for search engines and bots
+- changed cached filename in order to prevent duplicates
+- added messages for filesystem permissions issues
+- updated Google translation languages options (added Greek and Dutch)
 
 0.7.1
 - Fixed bug "Call to a member function on a non-object in /[....]/query.php". 
-	It happens only on certain servers with a custom PHP configuration
+  It happens only on certain servers with a custom PHP configuration
 - Fixed bug on building links for "Default Permalink Structure"
 
 0.7
@@ -134,33 +138,41 @@ Change Log
 - Initial release
 */
 
+require_once (dirname(__file__).'/header.php');
 
-define('DEBUG', false);
+define('DEBUG', true);
 
 
 define('FLAG_BAR_BEGIN', '<!--FLAG_BAR_BEGIN-->');
 define('FLAG_BAR_END', '<!--FLAG_BAR_END-->');
-//define('USER_AGENT', 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)');
-define('USER_AGENT',
-'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)');
-//  'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.6) Gecko/20061201 Firefox/2.0.0.6 (Ubuntu-feisty)');
-
+define('USER_AGENT','Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)');
 define('LANGS_PATTERN', 'it|ko|zh-CN|pt|en|de|fr|es|ja|ar|ru|el|nl|zh|zt|no');
-define('LANGS_PATTERN_WITH_SLASHES',
-  '/it/|/ko/|/zh-CN/|/pt/|/en/|/de/|/fr/|/es/|/ja/|/ar/|/ru/|/el/|/nl/|/zh/|/zt/|/no/');
-define('LANGS_PATTERN_WITHOUT_FINAL_SLASH',
-  '/it|/ko|/zh-CN|/pt|/en|/de|/fr|/es|/ja|/ar|/ru|/el|/nl|/zh|/zt|/no');
+define('LANGS_PATTERN_WITH_SLASHES', '/it/|/ko/|/zh-CN/|/pt/|/en/|/de/|/fr/|/es/|/ja/|/ar/|/ru/|/el/|/nl/|/zh/|/zt/|/no/');
+define('LANGS_PATTERN_WITHOUT_FINAL_SLASH', '/it|/ko|/zh-CN|/pt|/en|/de|/fr|/es|/ja|/ar|/ru|/el|/nl|/zh|/zt|/no');
 
-require_once (dirname(__file__).'/header.php');
+
+define('BASE_LANG', get_option('gltr_base_lang'));
+define('BAR_COLUMNS', get_option('gltr_col_num'));
+define('USE_CACHE', get_option('gltr_use_cache'));
+define('BAN_PREVENTION', get_option('gltr_ban_prevention'));
+define('CACHE_TIMEOUT', get_option('gltr_cache_timeout'));
+define('HTML_BAR_TAG', get_option('gltr_html_bar_tag'));
+define('TRANSLATION_ENGINE', get_option('gltr_my_translation_engine'));
+define('BLOG_URL', get_settings('siteurl'));
+define('BLOG_HOME', get_settings('home'));
+define('BLOG_HOME_ESCAPED', str_replace('/', '\\/', BLOG_HOME));
 
 $gltr_result = '';
-$gltr_engine = null;
+$gltr_engine = $gltr_available_engines[TRANSLATION_ENGINE];
+
+add_filter('query_vars', 'gltr_insert_my_rewrite_query_vars');
+add_action('parse_query', 'gltr_insert_my_rewrite_parse_query');
+add_action('admin_menu', 'gltr_add_options_page');
+add_action('init', 'gltr_translator_init');
 
 function gltr_translator_init()
 {
   global $wp_rewrite;
-  global $gltr_available_engines;
-  global $gltr_engine;
   if (isset($wp_rewrite) && $wp_rewrite->using_permalinks()) {
     define('REWRITEON', true);
     define('LINKBASE', $wp_rewrite->root);
@@ -169,31 +181,10 @@ function gltr_translator_init()
     define('KEYWORDS_REWRITEON', '0');
     define('LINKBASE', '');
   }
-
   if (REWRITEON) {
     add_filter('generate_rewrite_rules', 'gltr_translations_rewrite');
   }
-
-  define('BASE_LANG', get_option('gltr_base_lang'));
-  define('BAR_COLUMNS', get_option('gltr_col_num'));
-  define('USE_CACHE', get_option('gltr_use_cache'));
-  define('CACHE_TIMEOUT', get_option('gltr_cache_timeout'));
-  define('HTML_BAR_TAG', get_option('gltr_html_bar_tag'));
-  define('TRANSLATION_ENGINE', get_option('gltr_my_translation_engine'));
-
-  define('BLOG_URL', get_settings('siteurl'));
-  define('BLOG_HOME', get_settings('home'));
-  define('BLOG_HOME_ESCAPED', str_replace('/', '\\/', BLOG_HOME));
-
-  $gltr_engine = $gltr_available_engines[TRANSLATION_ENGINE];
-
-  add_filter('query_vars', 'gltr_insert_my_rewrite_query_vars');
-  add_action('parse_query', 'gltr_insert_my_rewrite_parse_query');
-  add_action('admin_menu', 'gltr_add_options_page');
-
 }
-add_action('init', 'gltr_translator_init');
-
 
 function gltr_build_translation_url($srcLang, $destLang, $urlToTransl)
 {
@@ -236,7 +227,7 @@ function gltr_translate($lang, $url)
 
   $resource = gltr_build_translation_url(BASE_LANG, $lang, $url_to_translate);
   
-  gltr_debug("Translation URL: $resource");
+  //gltr_debug("Translation URL: $resource");
   
   $buf = gltr_http_get_content($resource);
 
@@ -319,20 +310,21 @@ function gltr_clean_translated_page($buf, $lang)
   $buf = preg_replace($gltr_engine->get_links_pattern(), $gltr_engine->get_links_replacement(), $buf);
   $buf = urldecode($buf);
 
-  //Add the lang code to the uri
-  //$pattern = "/<a href=\"" . BLOG_HOME_ESCAPED . "([^\"]*)\"([\s|>]{1})/i";
+	if (is_browser() && BAN_PREVENTION)
+	  $nofollow = "rel=\"nofollow\"";
+	else
+	  $nofollow = " ";
   if (REWRITEON) {
-    $pattern = "/<a href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
-    //$repl = "<a href=\"" . BLOG_HOME . '/' . $lang . "\\1\" \\5";
-    $repl = "<a href=\"" . BLOG_HOME . '/' . $lang . "\\1\" \\5>";
+    $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
+  	$repl = "<a $nofollow href=\"" . BLOG_HOME . '/' . $lang . "\\1\" \\5>";
     $buf = preg_replace($pattern, $repl, $buf);
   } else {
-    $pattern = "/<a href=\"" . BLOG_HOME_ESCAPED . "\/\?(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
-    $repl = "<a href=\"" . BLOG_HOME . "?\\1&lang=$lang\" \\5>";
+    $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "\/\?(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
+    $repl = "<a $nofollow href=\"" . BLOG_HOME . "?\\1&lang=$lang\" \\5>";
     $buf = preg_replace($pattern, $repl, $buf);
     
-    $pattern = "/<a href=\"" . BLOG_HOME_ESCAPED . "[\/]{0,1}\"([^>]*)>/i";
-    $repl = "<a href=\"" . BLOG_HOME . "?lang=$lang\" \\1>";
+    $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "[\/]{0,1}\"([^>]*)>/i";
+    $repl = "<a $nofollow href=\"" . BLOG_HOME . "?lang=$lang\" \\1>";
     $buf = preg_replace($pattern, $repl, $buf);
   }
 
@@ -343,6 +335,9 @@ function gltr_clean_translated_page($buf, $lang)
       $buf);
   } else if (TRANSLATION_ENGINE == 'freetransl') {
     $buf = preg_replace("/\<div(.*)http:\/\/www\.freetranslation\.com\/images\/logo\.gif(.*)\<\/div\>/i", "", $buf);
+    $buf = str_replace(array("{L","L}"), array("",""), $buf);
+  } else if (TRANSLATION_ENGINE == 'google') {
+    $buf = preg_replace("/_setupIW()/", "", $buf);
   }
 
   //insert the flags bar
@@ -390,61 +385,75 @@ function gltr_get_flags_bar()
   $transl_count = count($translations); 
 
   $buf .= "\n" . FLAG_BAR_BEGIN; //initial marker
-  if ($use_table)
-    $buf .= "<table border='0'><tr>";
-  else
-    $buf .= "<div id=\"translation_bar\">";
 
-  $curr_col = 0;
+	
+  $show_links =  is_browser() || (
+  																!is_browser() && //search engine
+  																								(	(function_exists("is_single") && is_single())	|| 
+  																									(function_exists("is_page") 	&& is_page()) 	|| 
+  																									(function_exists("is_home") 	&& is_home())				
+  																								)
+  															);
+  if ($show_links || !BAN_PREVENTION){
 
-  //filter preferred
-  $preferred_transl = array();
-  foreach ($translations as $key => $value) {
-    if ($key == BASE_LANG || in_array($key, get_option('gltr_preferred_languages')))
-      $preferred_transl[$key] = $value;
-  }
-
-  foreach ($preferred_transl as $key => $value) {
-    if ($curr_col >= $num_cols && $num_cols > 0) {
-      if ($use_table)
-        $buf .= "</tr><tr>";
-      $curr_col = 0;
+    if ($use_table)
+      $buf .= "<table border='0'><tr>";
+    else
+      $buf .= "<div id=\"translation_bar\">";
+  
+    $curr_col = 0;
+  
+    //filter preferred
+    $preferred_transl = array();
+    foreach ($translations as $key => $value) {
+      if ($key == BASE_LANG || in_array($key, get_option('gltr_preferred_languages')))
+        $preferred_transl[$key] = $value;
     }
-    $flg_url = gltr_get_translated_url($key, gltr_get_self_url());
-    $flg_image_url = gltr_get_flag_image($key);
-    if ($use_table)
-      $buf .= "<td>";
-    $buf .= "<a id='flag_" . $key . "' href='" . $flg_url . "' hreflang='" . $key .
-      "'><img id='flag_img_" . $key . "' src='" . $flg_image_url . "' alt='" . $value .
-      " flag' title='" . $value . "'  border='0' /></a>";
-    if ($use_table)
-      $buf .= "</td>";
-    if ($num_cols > 0)
+    
+    foreach ($preferred_transl as $key => $value) {
+      if ($curr_col >= $num_cols && $num_cols > 0) {
+        if ($use_table)
+          $buf .= "</tr><tr>";
+        $curr_col = 0;
+      }
+      $flg_url = gltr_get_translated_url($key, gltr_get_self_url());
+      $flg_image_url = gltr_get_flag_image($key);
+      if ($use_table)
+        $buf .= "<td>";
+      $buf .= "<a id='flag_$key' href='$flg_url' hreflang='$key' $lnk_attr><img id='flag_img_$key' src='$flg_image_url' alt='$value flag' title='$value'  border='0' /></a>";
+      if ($use_table)
+        $buf .= "</td>";
+      if ($num_cols > 0)
+        $curr_col += 1;
+    }
+  
+    while ($curr_col < $num_cols && $num_cols > 0) {
+      if ($use_table)
+        $buf .= "<td>&nbsp;</td>";
       $curr_col += 1;
-  }
-
-  while ($curr_col < $num_cols && $num_cols > 0) {
+    }
+  
+  
+    if ($num_cols == 0)
+      $num_cols = count($translations);
+      
+    //***************************************************************************************
+    //Yes, you can remove the link from the flags bar, but you should put it on another place 
+    //on your blog, for example on your sidebar (i.e. inside your blogroll).
+    //This plugin is hard to develop and maintain and I freely redistribute it; I'm only asking 
+    //you a backlink to my website (http://www.nothing2hide.net). This will be very appreciated!! 
+    //Thanks!    
+    //
+    $n2hlink = "<a style=\"font-size:9px;\" href=\"http://www.nothing2hide.net\">By N2H</a>";
     if ($use_table)
-      $buf .= "<td>&nbsp;</td>";
-    $curr_col += 1;
-  }
-
-  if ($num_cols == 0)
-    $num_cols = count($translations);
-    
-  //***************************************************************************************
-  //Yes, you can remove the link from the flags bar, but you should put it on another place 
-  //on your blog, for example on your sidebar (i.e. inside your blogroll).
-  //This plugin is hard to develop and maintain and I freely redistribute it; I'm only asking 
-  //you a backlink to my website (http://www.nothing2hide.net). This will be very appreciated!! 
-  //Thanks!    
-  //
-  $n2hlink = "<a style=\"font-size:9px;\" href=\"http://www.nothing2hide.net\">By N2H</a>";
-  if ($use_table)
-    $buf .= "</tr><tr><td colspan=\"$num_cols\">$n2hlink</td></tr></table>";
-  else
-    $buf .= "<div id=\"transl_sign\">$n2hlink</div></div>";
-    
+      $buf .= "</tr><tr><td colspan=\"$num_cols\">$n2hlink</td></tr></table>";
+    else
+      $buf .= "<div id=\"transl_sign\">$n2hlink</div></div>";
+  } else {
+  	gltr_debug("Hiding links!");
+    $n2hlink = "<a href=\"http://www.nothing2hide.net\">By N2H</a>";
+    $buf .= $n2hlink;
+  }    
   $buf .= FLAG_BAR_END . "\n"; //final marker
   return $buf;
 }
@@ -463,13 +472,16 @@ function build_flags_bar()
 function gltr_get_translated_url($language, $url)
 {
   if (REWRITEON) {
-    $pattern = '/' . BLOG_HOME_ESCAPED . '\\/(' . LANGS_PATTERN . ')*[\\/]*(.*)/';
+
+
+    $pattern = '/' . BLOG_HOME_ESCAPED . '\\/((' . LANGS_PATTERN . ')[\\/])*(.*)/';
 
     if (preg_match($pattern, $url)) {
-      $uri = preg_replace($pattern, '\\2', $url);
+      $uri = preg_replace($pattern, '\\3', $url);
     } else {
       $uri = '';
     }
+
     if ($language == BASE_LANG)
       $url = BLOG_HOME . '/' . $uri;
     else
@@ -485,7 +497,7 @@ function gltr_get_translated_url($language, $url)
       if (preg_match($pattern2, $url)) {
         $url = preg_replace($pattern2, '\\1lang=' . $language . '\\3', $url);
       } else {
-      	if (strpos($url,'?')===false)
+        if (strpos($url,'?')===false)
           $url .= '?lang=' . $language;
         else
           $url .= '&lang=' . $language;
@@ -557,23 +569,40 @@ function gltr_get_page_content($lang, $url)
     $refresh = CACHE_TIMEOUT;
     //$unique_url_string = substr(gltr_get_self_url(), 7) . '|G|' . serialize($_GET) . '|P|' . serialize($_POST);
     //$hash = sha1($unique_url_string);
-    $req = $_SERVER['SERVER_NAME'] . preg_replace('/#.*$/', '', $_SERVER['REQUEST_URI'] .
-      gltr_get_cookies());
-    $req = preg_replace('/(.*)\//', '\\1', $req);
-    $hash = md5($req);
-    gltr_debug("HASHING $req TO: $hash");
+
+    //$req = $_SERVER['SERVER_NAME'] . preg_replace('/#.*$/', '', $_SERVER['REQUEST_URI'] . gltr_get_cookies());
+    //$req = preg_replace('/(.*)\//', '\\1', $req);
+    //$hash = md5($req);
+    
+    $req = preg_replace('/(.*)\/$/', '\\1', $_SERVER['REQUEST_URI']);
+    $req = preg_replace('/#.*$/', '', $req);
+    $hash = str_replace(array('?','<','>',':','\\','/','*','|','"'), '_', $req);
+    gltr_debug("Hashing uri: $req to: $hash");
     $cachedir = dirname(__file__) . '/cache';
-    $filename = $cachedir . '/' . $hash;
 
-    if (!file_exists($cachedir)) {
-      mkdir($cachedir);
-      //if (!mkdir($cachedir)) die "Unable to create the \"cache\" directory (" . dirname(__FILE__) . '/cache' ."). Try manually.";
+    if (!is_dir($cachedir)) {
+      mkdir($cachedir, 0777);
     }
+    
+    if (BAN_PREVENTION){
+			if (is_browser())
+				$cachedir .= '/normal';
+			else
+				$cachedir .= '/search-engine';
+		} else {
+			$cachedir .= '/normal';
+		}
 
+    if (!is_dir($cachedir)) {
+    	gltr_debug("Creating cache dir: $cachedir");
+      mkdir($cachedir, 0777);
+    }
+					
+    $filename = $cachedir . '/' . $hash;
     if (file_exists($filename) && ((time() - @filemtime($filename)) < $refresh) &&
       filesize($filename) > 0) {
       // We are done, just return the file and exit
-      gltr_debug("cache: returning cached version ($filename) for url:" .
+      gltr_debug("cache: returning cached version ($hash) for url:" .
         gltr_get_self_url());
       $handle = fopen($filename, "rb");
       $page = fread($handle, filesize($filename));
@@ -610,6 +639,7 @@ function gltr_get_page_content($lang, $url)
 
   } else {
     //Caching support disabled
+   	gltr_debug("Translating $url to $lang. No cache support");
     $page = gltr_translate($lang, $url);
   }
 
@@ -661,9 +691,31 @@ function gltr_debug($msg)
     $today = date("Y-m-d H:i:s ");
     $myFile = dirname(__file__) . "/debug.log";
     $fh = fopen($myFile, 'a') or die("Can't open debug file. Please manually create the 'debug.log' file (inside the 'global-translator' directory) and make it writable.");
-    fwrite($fh, $today . " - " . $msg . "\n");
+    $ua_simple = preg_replace("/(.*)\s\(.*/","\\1",$_SERVER['HTTP_USER_AGENT']);
+    fwrite($fh, $today . " [from: ".$_SERVER['REMOTE_ADDR']."|$ua_simple] - " . $msg . "\n");
     fclose($fh);
   }
+}
+
+function is_browser() {
+  $browsers_ua = array("compatible; MSIE", "UP.Browser",
+    "Mozilla", "Opera/7", "NSPlayer", "Opera/6","Avant Browser"
+    );
+  if (isset($_SERVER['HTTP_USER_AGENT']))
+    $ua = strtoupper($_SERVER['HTTP_USER_AGENT']);
+  else
+    $ua = "";
+
+  if ($ua == "") {
+    return false;
+  } else {
+    while (list($key, $val) = each($browsers_ua)) {
+      if (strstr($ua, strtoupper($val))) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function is_user_agent_allowed()
@@ -684,14 +736,15 @@ function is_user_agent_allowed()
     "SiteSnagger", "FlashGet", "NPBot", "Kontiki","Java","ETS V5.1",
     "IDBot", "id-search", "libwww", "lwp-trivial", "curl", "PHP/", "urllib", 
     "GT::WWW", "Snoopy", "MFC_Tear_Sample", "HTTP::Lite", "PHPCrawl", "URI::Fetch", 
-    "Zend_Http_Client", "http client", "PECL::HTTP");
+    "Zend_Http_Client", "http client", "PECL::HTTP","libwww-perl");
 
   $allowed = array("compatible; MSIE", "T720", "MIDP-1.0", "AU-MIC", "UP.Browser",
     "SonyEricsson", "MobilePhone SCP", "NW.Browser", "Mozilla", "UP.Link",
     "Windows-Media-Player", "MOT-TA02", "Nokia", "Opera/7", "NSPlayer",
     "GoogleBot/2", "Opera/6", "Panasonic", "Thinflow", "contype", "klondike", "UPG1",
     "SEC-SGHS100", "Scooter", "almaden.ibm.com",
-    "SpaceBison/0.01 [fu] (Win67; X; ShonenKnife)", "Internetseer","MSNBOT-MEDIA/");
+    "SpaceBison/0.01 [fu] (Win67; X; ShonenKnife)", "Internetseer","MSNBOT-MEDIA/",
+    "MEDIAPARTNERS-GOOGLE","MSNBOT","Avant Browser");
 
   if (isset($_SERVER['HTTP_USER_AGENT']))
     $ua = strtoupper($_SERVER['HTTP_USER_AGENT']);

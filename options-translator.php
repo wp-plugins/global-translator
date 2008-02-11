@@ -11,6 +11,7 @@ add_option('gltr_cache_timeout', '3600');
 add_option('gltr_html_bar_tag', 'TABLE');
 add_option('gltr_my_translation_engine', 'google');
 add_option('gltr_preferred_languages', array());
+add_option('gltr_ban_prevention', true);
 
 	
 	
@@ -27,12 +28,19 @@ if (isset($_POST['stage'])){
 	$gltr_cache_timeout 				= $_POST['gltr_cache_timeout'];
 	$gltr_html_bar_tag 					= $_POST['gltr_html_bar_tag'];
 	$gltr_my_translation_engine = $_POST['gltr_my_translation_engine'];
+	
 	if(isset($_POST['gltr_use_cache'])) 
 		$gltr_use_cache = true; 
 	else 
 		$gltr_use_cache = false;
+	
 	if (isset($_POST['gltr_preferred_languages']))
 		$gltr_preferred_languages = $_POST['gltr_preferred_languages'];
+	
+	if(isset($_POST['gltr_ban_prevention'])) 
+		$gltr_ban_prevention = true; 
+	else 
+		$gltr_ban_prevention = false;
 	
 	
 	if ('change' == $_POST['stage']) {
@@ -42,19 +50,24 @@ if (isset($_POST['stage'])){
 	} else if ('process' == $_POST['stage']){
 	  if(!empty($_POST["gltr_erase_cache"])) {
 	  	//Erase cache button pressed
-	    $cachedir = dirname(__FILE__) . '/cache';
-	    if (file_exists($cachedir) && is_dir($cachedir) && is_readable($cachedir)) {
-	      $handle = opendir($cachedir);
-	      while (FALSE !== ($item = readdir($handle))) {
-	        if($item != '.' && $item != '..') {
-	          $path = $cachedir.'/'.$item;
-	          unlink($path);
-	        }
-	      }
-	      $message = "Cache successfully erased";
-	    } else {
-	      $message = "Unable to erase cache or cache dir not existing";
-	    }
+	  	$dirs = array("","/normal","/search-engine");
+	  	foreach($dirs as $dir){
+		    $cachedir = dirname(__FILE__) . '/cache'.$dir;
+		    if (file_exists($cachedir) && is_dir($cachedir) && is_readable($cachedir)) {
+		      $handle = opendir($cachedir);
+		      while (FALSE !== ($item = readdir($handle))) {
+		        if($item != '.' && $item != '..') {
+		          $path = $cachedir.'/'.$item;
+		          if (file_exists($path) && is_file($path))
+		          	unlink($path);
+		        }
+		      }
+		      $message = "Cache dirs successfully erased.";
+		    } else {
+		      //$message = "Unable to erase cache or cache dir '$cachedir' doesn't exist.";
+		      //break;
+		    }
+		  }
 	  } else {
 	  	//update options button pressed
 	  	$iserror = false;
@@ -85,6 +98,11 @@ if (isset($_POST['stage'])){
 	      else
 	        update_option('gltr_use_cache', false);
 	
+	      if(isset($_POST['gltr_ban_prevention']))
+	        update_option('gltr_ban_prevention', true);
+	      else
+	        update_option('gltr_ban_prevention', false);
+	
 				$wp_rewrite->flush_rules();
 	      $message = "Options saved.";
 	    }
@@ -99,6 +117,7 @@ if (isset($_POST['stage'])){
 	$gltr_html_bar_tag = get_option('gltr_html_bar_tag');
 	$gltr_my_translation_engine = get_option('gltr_my_translation_engine');
 	$gltr_preferred_languages = get_option('gltr_preferred_languages');
+	$gltr_ban_prevention = get_option('gltr_ban_prevention');
 
 	$gltr_current_engine = $gltr_available_engines[$gltr_my_translation_engine];
 	$gltr_lang_matrix = $gltr_current_engine->get_languages_matrix();
@@ -111,6 +130,30 @@ if (isset($_POST['stage'])){
 		}
 		update_option('gltr_preferred_languages', $gltr_preferred_languages);
 	}
+
+  $cachedir = dirname(__file__) . '/cache';
+  if (!is_dir($cachedir)){
+    if( !is_readable(dirname(__file__)) || 
+    		!is_writable(dirname(__file__)) || 
+    		!mkdir($cachedir, 0777) ||
+    		!is_readable($cachedir) || 
+    		!is_writable($cachedir) || 
+    		!mkdir($cachedir.'/normal', 0777) ||
+    		!is_readable($cachedir.'/normal') || 
+    		!is_writable($cachedir.'/normal') || 
+    		!mkdir($cachedir.'/search-engine', 0777) ||
+    		!is_readable($cachedir.'/search-engine') || 
+    		!is_writable($cachedir.'/search-engine') 
+    		){
+     $message = "Unable to complete Global Translator initialization. Try to manually create (if not existing) and chmod 777 the folowing directories:
+     <ul><li>".$cachedir."</li><li>".$cachedir.'/normal'."</li><li>".$cachedir.'/search-engine'."</li></ul>";
+    }
+  } else {
+    if(!is_readable($cachedir) || !is_writable($cachedir)) {
+     $message = "Unable to complete Global Translator initialization:<br /> ".$cachedir." directory MUST be readable and writable! Please review the permissions.";
+
+    }
+  }
 }
 
 //foreach($gltr_preferred_languages as $key => $value){echo "$value<br>";}
@@ -322,7 +365,7 @@ if($message!="") { ?>
         <label><?php _e('Enable caching support') ?>
 	        	<input name="gltr_use_cache" type="checkbox" id="gltr_use_cache"  
 	        	
-	        	<?php if($gltr_use_cache == TRUE) {?> checked="checked" <?php } ?> /><br />
+	        	<?php if($gltr_use_cache == TRUE) {?> checked="checked" <?php } ?> /><br /><br />
 	        	By enabling this option, Global Translator will try to create a directory named named "<b>cache</b>" inside its installation path (<b><?echo dirname(__FILE__)?></b>).<br /> 
 	        	If your web server gives you permission problems, try to manually create a "<b>cache</b>" directory and make it writable by the web server (chmod 777).
         </label>
@@ -341,12 +384,32 @@ if($message!="") { ?>
       </table>
     </fieldset>
 
+  	<fieldset class="options">
+  		<legend><?php _e('Translation engines ban prevention') ?></legend>
+  		<table width="100%" cellpadding="5" class="editform">
+  		<tr><td>
+        <label><?php _e('Enable translation engines ban prevention') ?>
+	        	<input name="gltr_ban_prevention" type="checkbox" id="gltr_ban_prevention"  
+	        	<?php if($gltr_ban_prevention == TRUE) {?> checked="checked" <?php } ?> /><br />	        	<br />
+	        	By enabling this option, Global Translator will make visible the translation links to the spiders and search engines only on the following types of pages:
+	        	<ul>
+	        	<li>Home pages</li>
+	        	<li>Single post pages</li>
+	        	<li>Single pages</li>
+	        	</ul> 
+	        This could be useful in order to prevent from banning by the translation services due to an high number of translation requests and could also prevent content duplication issues.
+        </label>
+      </td></tr>
+      </table>
+    </fieldset>
+
     <p class="submit">
       <input type="submit" name="gltr_save" value="<?php _e('Update options') ?> &raquo;" />
     </p>
 		<fieldset class="options">
 			<legend><?php _e('Informations and support') ?></legend>
-			<p><?php echo str_replace("%s","<a href=\"http://www.nothing2hide.net/blog/wp-plugins/wordpress-global-translator-plugin/\">http://www.nothing2hide.net/blog/wp-plugins/wordpress-global-translator-plugin/</a>",__("Check %s for updates and comment there if you have any problems / questions / suggestions.")); ?></p>
+			<p><?php echo str_replace("%s","<a href=\"http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/\">http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/</a>",
+				__("Check %s for updates and comment there if you have any problems / questions / suggestions.")); ?></p>
 		</fieldset>
   </form>
 </div>

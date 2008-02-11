@@ -124,7 +124,9 @@ $googleEngine = new gltr_translation_engine(
                     'ko'=>'Korean',
                     'zh-CN'=>'Chinese',
                     'ar'=>'Arabic',
-                    'ru'=>'Russian'),
+                    'ru'=>'Russian',
+                    'el'=>'Greek',
+                    'nl'=>'Dutch'),
   'de'    => array( 'de'=>'Deutsch',
                     'en'=>'Englisch',
                     'fr'=>'Franzosisch'),
@@ -139,6 +141,10 @@ $googleEngine = new gltr_translation_engine(
                     'en'=>'English'),
   'ru'    => array( 'ru'=>'Russian',
                     'en'=>'English'),
+  'el'    => array( 'el'=>'Greek',
+                    'en'=>'English'),
+  'nl'    => array( 'nl'=>'Dutch',
+                    'en'=>'English'),
   ),
 
 	array(
@@ -152,7 +158,9 @@ $googleEngine = new gltr_translation_engine(
 	  'es'    => 'Spanish',
 	  'ja'    => 'Japanese',
 	  'ar'    => 'Arabic',
-	  'ru'		=> 'Russian'
+	  'ru'		=> 'Russian',
+	  'el'    => 'Greek',
+	  'nl'		=> 'Dutch'
 	  )
 
 	);
