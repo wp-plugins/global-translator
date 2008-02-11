@@ -15,7 +15,7 @@ Global Translator automatically translates your blog in the following fourteen d
 English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, 
 Greek, Dutch and Norwegian.
 The number of available translations will depend on your blog language and the translation engine you will chose to use.
-Features:
+Main features:
 
 * Four different translation engines: Google Translation Engine, Babel Fish, Promt, FreeTranslations
 * Search Engine Optimized: it uses the permalinks by adding the language code at the beginning of all your URI. 
@@ -25,11 +25,7 @@ Features:
 * Fully configurable layout: you can easily customize the appearance of the translation bar by choosing between a TABLE 
 	or DIV layout for the flags bar and by selecting the number of translations to make available to your visitors 
 
-For the latest information visit the website
-
-http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
-
-A complete changelog can be found at
+For the latest information and changelog visit the website
 
 http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 
@@ -40,8 +36,7 @@ http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 3.	From the main menu choose "Options->Global Translator" and select 
 		your blog language and your preferred configuration options then select "Update Options".
 
-Upgrade
-
+How to upgrade
 Uninstall the previous version and follow the Installation instructions.
 
 == Configuration ==
@@ -80,4 +75,10 @@ I suggest you to try all the translation engines in order to choose the best one
 
 = How do I upgrade Global Translator? =
 
-In general this just requires that you replace the existing files with the new ones. Sometimes its a good idea to delete all the files in wp-content/plugins/global-translator/ and re-upload them fresh.
+In general this just requires that you replace the existing files with the new ones. Sometimes its a good idea to delete all 
+the files in wp-content/plugins/global-translator/ and re-upload them fresh.
+
+= I've just changed my perlalinks structure and Global Translator doesn't translate anymore =
+
+Every time you update the permalinks structure of your blog, the custom rules previously added by Global Translator are overriden.
+To solve the problem you must just refresh the Global Translator Options ("Update Options" button) on the administrative area.
