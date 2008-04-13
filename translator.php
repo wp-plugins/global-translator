@@ -1,9 +1,9 @@
 <?php
 /*
 Plugin Name: Global Translator
-Plugin URI: http://www.nothing2hide.net/blog/wp-plugins/wordpress-global-translator-plugin/
-Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt)
-Version: 0.7.2
+Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
+Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
+Version: 0.8
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -64,6 +64,13 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+0.8
+- Updated Prompt engine
+- Added experimental translation engines ban prevention system
+- Improved caching management
+- Improved setup process
+- Fixed a bug on building links for "Default Permalink Structure"
 
 0.7.2
 - Fixed other bug on building links for "Default Permalink Structure"
@@ -140,7 +147,7 @@ Change Log
 
 require_once (dirname(__file__).'/header.php');
 
-define('DEBUG', true);
+define('DEBUG', false);
 
 
 define('FLAG_BAR_BEGIN', '<!--FLAG_BAR_BEGIN-->');
@@ -156,6 +163,7 @@ define('BAR_COLUMNS', get_option('gltr_col_num'));
 define('USE_CACHE', get_option('gltr_use_cache'));
 define('BAN_PREVENTION', get_option('gltr_ban_prevention'));
 define('CACHE_TIMEOUT', get_option('gltr_cache_timeout'));
+define('POST_CACHE_TIMEOUT', get_option('gltr_posts_cache_timeout'));
 define('HTML_BAR_TAG', get_option('gltr_html_bar_tag'));
 define('TRANSLATION_ENGINE', get_option('gltr_my_translation_engine'));
 define('BLOG_URL', get_settings('siteurl'));
@@ -184,6 +192,7 @@ function gltr_translator_init()
   if (REWRITEON) {
     add_filter('generate_rewrite_rules', 'gltr_translations_rewrite');
   }
+  gltr_debug("GT $gltr_VERSION initialized.");
 }
 
 function gltr_build_translation_url($srcLang, $destLang, $urlToTransl)
@@ -227,8 +236,6 @@ function gltr_translate($lang, $url)
 
   $resource = gltr_build_translation_url(BASE_LANG, $lang, $url_to_translate);
   
-  //gltr_debug("Translation URL: $resource");
-  
   $buf = gltr_http_get_content($resource);
 
   return gltr_clean_translated_page($buf, $lang);
@@ -264,6 +271,7 @@ function gltr_http_get_content($resource){
       return "$errstr ($errno)<br />\n";
     } else {
       fputs($fp, $req, strlen($req)); // send request
+      gltr_debug("Translation request: $req");
       $buf = '';
       $isFlagBar = false;
       $flagBarWritten = false;
@@ -272,7 +280,6 @@ function gltr_http_get_content($resource){
       $inHeaders = true;
       while (!feof($fp)) {
         $line = fgets($fp);
-
         if ($inHeaders) {
           if (trim($line) == '') {
             $inHeaders = false;
@@ -284,10 +291,17 @@ function gltr_http_get_content($resource){
           }
           $key = strtolower(trim($m[1]));
           $val = trim($m[2]);
-          if ($key == 'location') {
+					if ($key == 'location') {
             $redirect_url = $val;
-            $isredirect = true;
-            break;
+            $pos = strpos($redirect_url, 'http://sorry.google.com');
+						gltr_debug("redirect[$pos]:: $redirect_url");
+            if ($pos !== false){
+            	$buf = "<html><body><center><br /><br /><b>Sorry, the translation engine is temporarily not available. Please try again later</b><br /><br /><a href='".get_settings('home')."'>Home page</a></center></body></html>";
+            	$isredirect = false;
+            } else {
+            	$isredirect = true;
+            }
+          	break;
           }
           continue;
         }
@@ -310,7 +324,7 @@ function gltr_clean_translated_page($buf, $lang)
   $buf = preg_replace($gltr_engine->get_links_pattern(), $gltr_engine->get_links_replacement(), $buf);
   $buf = urldecode($buf);
 
-	if (is_browser() && BAN_PREVENTION)
+	if (!gltr_is_browser() && BAN_PREVENTION)
 	  $nofollow = "rel=\"nofollow\"";
 	else
 	  $nofollow = " ";
@@ -341,14 +355,14 @@ function gltr_clean_translated_page($buf, $lang)
   }
 
   //insert the flags bar
-  $bar = gltr_get_flags_bar();
+	$bar = gltr_get_flags_bar();
+
   if (strpos($buf, FLAG_BAR_BEGIN) > 0 && strpos($buf, FLAG_BAR_END) > 0) {
     $buf = substr($buf, 0, strpos($buf, FLAG_BAR_BEGIN)) . $bar . substr($buf,
       strpos($buf, FLAG_BAR_END) + strlen(FLAG_BAR_END));
   } else {
     gltr_debug("Flags bar tokens not found: unhandled page type (RSS feed?)");
   }
-
   return $buf;
 }
 
@@ -360,14 +374,17 @@ function gltr_build_request($host, $http_req)
   //$res .= "Content-Type: application/x-www-form-urlencoded\r\n";
   $res .= "Content-Length: 0\r\n";
   $res .= "Connection: close\r\n\r\n";
-  //echo $res;
   return $res;
 }
 
 
 function gltr_get_flags_bar()
 {
-  global $gltr_engine;
+  global $gltr_engine, $wp_query;
+	if (!isset($gltr_engine)||$gltr_engine == null){
+		gltr_debug("WARNING: Options not set!!");
+		return "<b>Global Translator not configured yet.</b>";
+	}
 
   $use_table = false;
   if (HTML_BAR_TAG == 'TABLE')
@@ -377,7 +394,8 @@ function gltr_get_flags_bar()
   $buf = '';
   if ($num_cols < 0)
     $num_cols = 0;
-
+	
+  
   $transl_map = $gltr_engine->get_languages_matrix();
 
   $translations = $transl_map[BASE_LANG];
@@ -386,15 +404,22 @@ function gltr_get_flags_bar()
 
   $buf .= "\n" . FLAG_BAR_BEGIN; //initial marker
 
-	
-  $show_links =  is_browser() || (
-  																!is_browser() && //search engine
-  																								(	(function_exists("is_single") && is_single())	|| 
-  																									(function_exists("is_page") 	&& is_page()) 	|| 
-  																									(function_exists("is_home") 	&& is_home())				
-  																								)
-  															);
-  if ($show_links || !BAN_PREVENTION){
+	$is_original_page = !isset($wp_query->query_vars['lang']);
+	$is_browser = gltr_is_browser();
+	$is_search_engine = !$is_browser;
+	$is_indexable_page = (	(function_exists("is_single") && is_single())	|| (function_exists("is_page") 	&& is_page()) 	|| (function_exists("is_home") 	&& is_home()) );
+  /*
+	gltr_debug("gltr_get_flags_bar==>is_category=".is_category().
+	"|is_tag=".is_tag().
+	"|is_single=".is_single().
+	"|is_page=".is_page().
+	"|is_home=".is_home().
+	"|gltr_is_translation_engine=".gltr_is_translation_engine().
+	"|gltr_is_browser=".gltr_is_browser());
+	gltr_debug("gltr_get_flags_bar==>is_original_page=$is_original_page|is_indexable_page=$is_indexable_page|is_search_engine=$is_search_engine|is_browser=$is_browser");  	
+  	*/														
+  if ( ($is_original_page && $is_indexable_page && $is_search_engine) || $is_browser || !BAN_PREVENTION){
+	//if ( $show_links || !BAN_PREVENTION){
 
     if ($use_table)
       $buf .= "<table border='0'><tr>";
@@ -438,7 +463,7 @@ function gltr_get_flags_bar()
       $num_cols = count($translations);
       
     //***************************************************************************************
-    //Yes, you can remove the link from the flags bar, but you should put it on another place 
+    //Yes, you can remove my website link from the flags bar, but you should put it on another place 
     //on your blog, for example on your sidebar (i.e. inside your blogroll).
     //This plugin is hard to develop and maintain and I freely redistribute it; I'm only asking 
     //you a backlink to my website (http://www.nothing2hide.net). This will be very appreciated!! 
@@ -450,8 +475,7 @@ function gltr_get_flags_bar()
     else
       $buf .= "<div id=\"transl_sign\">$n2hlink</div></div>";
   } else {
-  	gltr_debug("Hiding links!");
-    $n2hlink = "<a href=\"http://www.nothing2hide.net\">By N2H</a>";
+  	$n2hlink = "<a href=\"http://www.nothing2hide.net\">By N2H</a>";
     $buf .= $n2hlink;
   }    
   $buf .= FLAG_BAR_END . "\n"; //final marker
@@ -585,20 +609,28 @@ function gltr_get_page_content($lang, $url)
     }
     
     if (BAN_PREVENTION){
-			if (is_browser())
+			if (gltr_is_browser())
 				$cachedir .= '/normal';
 			else
 				$cachedir .= '/search-engine';
 		} else {
 			$cachedir .= '/normal';
 		}
-
+		
     if (!is_dir($cachedir)) {
     	gltr_debug("Creating cache dir: $cachedir");
       mkdir($cachedir, 0777);
     }
 					
     $filename = $cachedir . '/' . $hash;
+    
+    if(file_exists($filename) && !is_readable($filename) ){
+    	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cached file <em>$filename</em> cannot be read. <br />Please chmod it to 777 or disable the caching support from the admin page.</b>";	
+    }
+    if(file_exists($filename) && !is_writeable($filename) ){
+    	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cached file <em>$filename</em> cannot be modified. <br />Please chmod it to 777 or disable the caching support from the admin page.</b>";	
+    }
+    
     if (file_exists($filename) && ((time() - @filemtime($filename)) < $refresh) &&
       filesize($filename) > 0) {
       // We are done, just return the file and exit
@@ -662,13 +694,37 @@ function gltr_insert_my_rewrite_parse_query($query)
 {
   global $gltr_result;
   if (isset($query->query_vars['lang'])) {
-    if (is_user_agent_allowed()){
+		/*
+	  $perm_pages = ($query->is_single	|| $query->is_page || $query->is_home);  	
+		gltr_debug("==>ALT is_category=".$query->is_category.
+		"|is_tag=".$query->is_tag.
+		"|is_single=".$query->is_single.
+		"|is_page=".$query->is_page.
+		"|is_home=".$query->is_home.
+		"|is_browser=".is_browser());
+  	if (!is_browser() && !$perm_pages && BAN_PREVENTION){
+  		gltr_debug("Limiting bot/crawler access to resource:$url");
+  		//header("Status: 404");
+  		header('HTTP/1.x 404 Not Found'); 
+  		die();
+  	}else if (is_user_agent_allowed()){
       $lang = $query->query_vars['lang'];
       $url = $query->query_vars['url'];
       if (empty($url)) {
         $url = '';
+      }*/
+  	
+	  if (!is_user_agent_allowed() && BAN_PREVENTION){
+  		gltr_debug("Limiting bot/crawler access to resource:$url");
+  		header('HTTP/1.x 404 Not Found'); 
+  		die();
+  	}else {
+     	$lang = $query->query_vars['lang'];
+     	$url = $query->query_vars['url'];
+     	if (empty($url)) {
+       	$url = '';
       }
-  
+  		
       $gltr_result = gltr_get_page_content($lang, $url);
   
       ob_start('gltr_filter_content');
@@ -697,10 +753,29 @@ function gltr_debug($msg)
   }
 }
 
-function is_browser() {
-  $browsers_ua = array("compatible; MSIE", "UP.Browser",
-    "Mozilla", "Opera/7", "NSPlayer", "Opera/6","Avant Browser"
-    );
+function gltr_is_translation_engine() {
+	$translation_engines = array(
+	"195.131.10.152",//promt
+	"209.85.136.136"
+	);
+	foreach ($translation_engines as $key => $value) {
+    if ($_SERVER['REMOTE_ADDR'] == strtoupper($value)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function gltr_is_browser() {
+  $browsers_ua = array(
+  "compatible; MSIE", 
+  "UP.Browser",
+  "Mozilla", 
+  "Opera/7", 
+  "NSPlayer", 
+  "Opera/6",
+  "Avant Browser"
+  );
   if (isset($_SERVER['HTTP_USER_AGENT']))
     $ua = strtoupper($_SERVER['HTTP_USER_AGENT']);
   else
@@ -711,6 +786,7 @@ function is_browser() {
   } else {
     while (list($key, $val) = each($browsers_ua)) {
       if (strstr($ua, strtoupper($val))) {
+      	gltr_debug("AAA===>".$val);
         return true;
       }
     }
@@ -741,7 +817,7 @@ function is_user_agent_allowed()
   $allowed = array("compatible; MSIE", "T720", "MIDP-1.0", "AU-MIC", "UP.Browser",
     "SonyEricsson", "MobilePhone SCP", "NW.Browser", "Mozilla", "UP.Link",
     "Windows-Media-Player", "MOT-TA02", "Nokia", "Opera/7", "NSPlayer",
-    "GoogleBot/2", "Opera/6", "Panasonic", "Thinflow", "contype", "klondike", "UPG1",
+    "GoogleBot", "Opera/6", "Panasonic", "Thinflow", "contype", "klondike", "UPG1",
     "SEC-SGHS100", "Scooter", "almaden.ibm.com",
     "SpaceBison/0.01 [fu] (Win67; X; ShonenKnife)", "Internetseer","MSNBOT-MEDIA/",
     "MEDIAPARTNERS-GOOGLE","MSNBOT","Avant Browser");

@@ -7,7 +7,7 @@ load_plugin_textdomain('gltr'); // NLS
 add_option('gltr_base_lang', 'en');
 add_option('gltr_col_num', '0');
 add_option('gltr_use_cache', false);
-add_option('gltr_cache_timeout', '3600');
+add_option('gltr_cache_timeout', '10800');//3h
 add_option('gltr_html_bar_tag', 'TABLE');
 add_option('gltr_my_translation_engine', 'google');
 add_option('gltr_preferred_languages', array());
@@ -84,7 +84,7 @@ if (isset($_POST['stage'])){
 	    }
 	    
 	    if(!$iserror) {
-	      if ($timeout == "") $timeout = "3600";
+	      if ($timeout == "") $timeout = "10800";
 	      update_option('gltr_base_lang', $_POST['gltr_base_lang']);
 	      update_option('gltr_col_num', $_POST['gltr_col_num']);
 	      update_option('gltr_cache_timeout', $timeout);
@@ -119,6 +119,8 @@ if (isset($_POST['stage'])){
 	$gltr_preferred_languages = get_option('gltr_preferred_languages');
 	$gltr_ban_prevention = get_option('gltr_ban_prevention');
 
+  if ($gltr_cache_timeout == "") $gltr_cache_timeout = "10800";
+
 	$gltr_current_engine = $gltr_available_engines[$gltr_my_translation_engine];
 	$gltr_lang_matrix = $gltr_current_engine->get_languages_matrix();
 	if (count($gltr_preferred_languages) == 0) {
@@ -132,8 +134,43 @@ if (isset($_POST['stage'])){
 	}
 
   $cachedir = dirname(__file__) . '/cache';
+  $search_engine_cachedir = $cachedir . '/normal';
+  $user_cachedir = $cachedir . '/search-engine';
+  
+  $message = "";
   if (!is_dir($cachedir)){
-    if( !is_readable(dirname(__file__)) || 
+  	if(!mkdir($cachedir, 0777)){
+      $message = "Unable to complete Global Translator initialization. Plese manually create and chmod 777 the following directory:
+      <ul><li>".$cachedir."</li></ul>";
+  	} 
+	} else if (!is_readable($cachedir) || !is_writable($cachedir) ){
+    $message = "Unable to complete Global Translator initialization. Plese chmod 777 the following directory:
+    <ul><li>".$cachedir."</li></ul>";
+  } else {
+	  if (!is_dir($search_engine_cachedir)){
+	  	if(!mkdir($search_engine_cachedir, 0777)){
+	      $message = "Unable to complete Global Translator initialization. Plese manually create and chmod 777 the following directory:
+	      <ul><li>".$search_engine_cachedir."</li></ul>";
+	  	} 
+	  } else if (!is_readable($search_engine_cachedir) || !is_writable($search_engine_cachedir) ){
+      $message = "Unable to complete Global Translator initialization. Plese chmod 777 the following directory:
+      <ul><li>".$search_engine_cachedir."</li></ul>";
+	  }
+	  if (!is_dir($user_cachedir)){
+	  	if(!mkdir($user_cachedir, 0777)){
+	      $message = "Unable to complete Global Translator initialization. Plese manually create and chmod 777 the following directory:
+	      <ul><li>".$user_cachedir."</li></ul>";
+	  	} 
+	  }else if (!is_readable($user_cachedir) || !is_writable($user_cachedir) ){
+      $message = "Unable to complete Global Translator initialization. Plese chmod 777 the following directory:
+      <ul><li>".$user_cachedir."</li></ul>";
+	  }
+  	
+  }
+  /*
+  if (!is_dir($cachedir)){
+    if( !is_dir($cachedir) ||
+    		!is_readable(dirname(__file__)) || 
     		!is_writable(dirname(__file__)) || 
     		!mkdir($cachedir, 0777) ||
     		!is_readable($cachedir) || 
@@ -150,10 +187,15 @@ if (isset($_POST['stage'])){
     }
   } else {
     if(!is_readable($cachedir) || !is_writable($cachedir)) {
-     $message = "Unable to complete Global Translator initialization:<br /> ".$cachedir." directory MUST be readable and writable! Please review the permissions.";
-
+     $message .= "Unable to complete Global Translator initialization:<br /> ".$cachedir." directory MUST be readable and writable! Please review the permissions.";
     }
-  }
+    if(!is_readable($cachedir.'/normal') || !is_writable($cachedir.'/normal')) {
+     $message .= "Unable to complete Global Translator initialization:<br /> ".$cachedir.'/normal'." directory MUST be readable and writable! Please review the permissions.";
+    }
+    if(!is_readable($cachedir.'/search-engine') || !is_writable($cachedir.'/search-engine')) {
+     $message .= "Unable to complete Global Translator initialization:<br /> ".$cachedir.'/search-engine'." directory MUST be readable and writable! Please review the permissions.";
+    }
+  }*/
 }
 
 //foreach($gltr_preferred_languages as $key => $value){echo "$value<br>";}
@@ -261,11 +303,13 @@ if($message!="") { ?>
 <?php	echo $message; ?>
 	</p></strong></div>
 
-<?php } ?>
+<?php } else { ?>
+	
+<?php	} ?>
 			
 <form name="test"></form>
 <div class="wrap">
-  <h2><?php _e('Global Translator ')?>0.7.2</h2>
+  <h2><?php _e('Global Translator ')?><?php echo($gltr_VERSION);?></h2>
   <form id="gltr_form" name="form1" method="post" action="<?php echo $location ?>">
   	<input type="hidden" name="stage" value="process" />
 
@@ -288,7 +332,7 @@ if($message!="") { ?>
       <tr><td>
         <label><input type="radio" onclick="document.forms['form1'].stage.value='change';document.forms['form1'].submit();" 
           <?php if($gltr_my_translation_engine == 'babelfish') {?> checked <?php } ?> name="gltr_my_translation_engine" 
-            value="babelfish">&nbsp;<?php _e('Altavista Babel Fish') ?>
+            value="babelfish">&nbsp;<?php _e('Altavista Babel Fish(at now it is just a redirect)') ?>
         </label>
       </td></tr>
       <tr><td>
@@ -371,9 +415,9 @@ if($message!="") { ?>
         </label>
       </td></tr>
   		<tr><td>
-        <label><?php _e('Refresh cache every ') ?>
+        <label><?php _e('Refresh standard cache every ') ?>
 	        	<input name="gltr_cache_timeout" id="gltr_cache_timeout" size="5" maxlength="8"
-	        	value="<?php echo $gltr_cache_timeout ?>" /> seconds. <br/>If you leave it empty, the default value <strong>"3600"</strong> (1 hour) will be used.
+	        	value="<?php echo $gltr_cache_timeout ?>" /> seconds. <br/>If you leave it empty, the default value <strong>"10800"</strong> (3 hours) will be used.
         </label>
       </td></tr>
   		<tr><td>
@@ -406,6 +450,14 @@ if($message!="") { ?>
     <p class="submit">
       <input type="submit" name="gltr_save" value="<?php _e('Update options') ?> &raquo;" />
     </p>
+
+		<fieldset class="options">
+			<legend><?php _e('Thanks for using this plugin!') ?></legend>
+				<strong><p><?php echo __('If you are satisfied with the results, isn\'t it worth at least one dollar? 
+					<a href="http://www.nothing2hide.net/donate_global_translator.php">Donations</a> help me to continue support and development of this <i>free</i> software! '); ?> 
+					</p></strong>
+		</fieldset>
+
 		<fieldset class="options">
 			<legend><?php _e('Informations and support') ?></legend>
 			<p><?php echo str_replace("%s","<a href=\"http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/\">http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/</a>",

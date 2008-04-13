@@ -1,11 +1,11 @@
 === Global Translator ===
-Tags: translator, multilanguage, automatic translator, google translations, babelfish, promt, freetranslations
+Tags: translator, multilanguage, automatic translator, google translations, babelfish, promt, freetranslations, widget
 Author: Davide Pozza
 Contributors: 
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.0
-Tested up to: 2.3
-Stable Tag: 0.7.1
+Tested up to: 2.5
+Stable Tag: 0.8
 
 Automatically translates your blog in fourteen different languages!
 
@@ -57,16 +57,17 @@ for your language will appear on your blog.
 
 This is often due to a conflict with another plugin or to a custom .htaccess file which doesn't permit Global Translator 
 to add its custom permalink rules. In order to identify the problem, try to deactivate all the other existing plugins and 
-if nothing change check your .htaccess file and comment out all the non-standard rewrite rules.
-If you discover a conflicting plugin please send me an email (davide@nothing2hide.net)
+if nothing change check your .htaccess file and comment out all the non-standard rewrite rules. If you discover a conflicting 
+plugin please send me an email (davide at nothing2hide.net).
 
 = Error 403 when using Google Translations engine =
 
 If Google receives too many translation requests for a single IP address (it usually happens when your site is crawled by 
 spiders or bots which perform massive requests), it sometimes decides to temporarily block requests from your IP.
-At now you have only two options:
-	1. try another engine 
-	2. block bots access to your translated URL paths (/en/*, /fr/*, ...) on your robots.txt file
+At now you have three different options:
+	1. make sure to enable caching and ban prevention from the Global Translator options page
+	2. try another translation engine 
+	3. block bots access to your translated URL paths (/en/*, /fr/*, ...) on your robots.txt file
 
 = The translated page has a bad/broken layout =
 
