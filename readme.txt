@@ -5,7 +5,7 @@ Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.0
 Tested up to: 2.5
-Stable Tag: 0.8
+Stable Tag: 0.9
 
 Automatically translates your blog in fourteen different languages!
 
