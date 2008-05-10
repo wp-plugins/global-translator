@@ -66,7 +66,7 @@ plugin "Global Translator", and click the "Deactivate" button.
 Change Log
 0.9
 - Added support for 10 new languages for Google Translations engine: Bulgarian, Czech, Croat, Danish, Finnish, Hindi, Polish, Rumanian, Swedish, Greek, Norwegian
-- Updated icon images (provided by famfamfam.com)
+- Updated flags icons (provided by famfamfam.com)
 
 0.8
 - Updated Prompt engine
