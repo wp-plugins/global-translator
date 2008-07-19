@@ -127,7 +127,7 @@ $googleEngine = new gltr_translation_engine(
                     'hi'=>'Hindi',
                     'pl'=>'Polacco',
                     'ro'=>'Rumeno',
-                    'sv'=>'Swedese',
+                    'sv'=>'Svedese',
                     'el'=>'Greco',
     								'no'		=>'Norvegese'
                     ),
