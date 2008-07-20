@@ -59,7 +59,7 @@ Change Log
 - Activated new Prompt configuration
 - Fixed little issue with Portuguese translation
 - Fixed Swedish and Czech flags icons (thanks to Mijk Bee)
-- Added event-based cache invalidation and increased default cache timeout
+- Switched to an event-driven cache invalidation method
 
 0.9
 - Added support for 10 new languages for Google Translations engine: Bulgarian, Czech, Croat, Danish, Finnish, Hindi, Polish, Rumanian, Swedish, Greek, Norwegian
