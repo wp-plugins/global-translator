@@ -58,8 +58,8 @@ Change Log
 0.9.1
 - Activated new Prompt configuration
 - Fixed little issue with Portuguese translation
-- Fixed Swedish and Czech flags icons (thanks to Mijk Bee)
-- Switched to an event-driven cache invalidation method
+- Fixed Swedish, Arabic and Czech flags icons (thanks to Mijk Bee and Nigel Howarth)
+- Added event-based cache invalidation and increased default cache timeout
 
 0.9
 - Added support for 10 new languages for Google Translations engine: Bulgarian, Czech, Croat, Danish, Finnish, Hindi, Polish, Rumanian, Swedish, Greek, Norwegian
@@ -147,7 +147,7 @@ Change Log
 
 require_once (dirname(__file__).'/header.php');
 
-define('DEBUG', false);
+define('DEBUG', true);
 
 
 define('FLAG_BAR_BEGIN', '<!--FLAG_BAR_BEGIN-->');
@@ -275,7 +275,11 @@ function gltr_http_get_content($resource){
     $http_q = $path . '?' . $query;
 
     $req = gltr_build_request($host, $http_q);
+		
+		//CONNECT <my home ip>:23 HTTP/1.0
+		//Host: <my home ip>:23
 
+				
     $fp = @fsockopen($host, $port, $errno, $errstr);
 
     if (!$fp) {
@@ -292,8 +296,11 @@ function gltr_http_get_content($resource){
 			$prevline='';
       while (!feof($fp)) {
         $line = fgets($fp);
+        //gltr_debug("read line: $line");
         if ($inHeaders) {
-          if (trim($line) == '' && trim($prevline) == '') {
+        	if (preg_match('/<[ ]*html/i', trim($line))){
+        	  $inHeaders = false;
+          } else if (trim($line) == '' && trim($prevline) == '') {
             $inHeaders = false;
             continue;
           }
@@ -309,7 +316,7 @@ function gltr_http_get_content($resource){
             $pos = strpos($redirect_url, 'http://sorry.google.com');
 						//gltr_debug("redirect[$pos]:: $redirect_url");
             if ($pos !== false){
-            	$buf = "<html><body><center><br /><br /><b>Sorry, the translation engine is temporarily not available. Please try again later</b><br /><br /><a href='".get_settings('home')."'>Home page</a></center></body></html>";
+            	$buf = "<html><body><center><br /><br /><b>Sorry, the Google translation engine is temporarily not available. Please try again later or switch to another translation engine</b><br /><br /><a href='".get_settings('home')."'>Home page</a></center></body></html>";
             	$isredirect = false;
             } else {
             	$isredirect = true;
@@ -422,7 +429,7 @@ function gltr_get_flags_bar()
 	$is_original_page = !isset($wp_query->query_vars['lang']);
 	$is_browser = gltr_is_browser();
 	$is_search_engine = !$is_browser;
-	$is_indexable_page = (	(function_exists("is_single") && is_single())	|| (function_exists("is_page") 	&& is_page()) 	|| (function_exists("is_home") 	&& is_home()) );
+	//$is_indexable_page = (	(function_exists("is_single") && is_single())	|| (function_exists("is_page") 	&& is_page()) 	|| (function_exists("is_home") 	&& is_home()) );
 
   //if ( ($is_original_page && $is_indexable_page && $is_search_engine) || $is_browser || !BAN_PREVENTION){
 
@@ -594,6 +601,7 @@ function gltr_get_page_content($lang, $url)
 {
   $page = '';
   if (USE_CACHE) {
+  	$from_cache = false;
     $hash = gltr_hashReqUri($_SERVER['REQUEST_URI']);
     gltr_debug("Hashing uri: $req to: $hash");
     $cachedir = dirname(__file__) . '/cache';
@@ -618,22 +626,26 @@ function gltr_get_page_content($lang, $url)
     
     if (file_exists($filename) && filesize($filename) > 0) {
       // We are done, just return the file and exit
-      gltr_debug("cache: returning cached version ($hash) for url:" .
-        gltr_get_self_url());
+      gltr_debug("cache: returning cached version ($hash) for url:" . gltr_get_self_url());
       $handle = fopen($filename, "rb");
       $page = fread($handle, filesize($filename));
       $page .= "<!--CACHED VERSION (timeout: " . CACHE_TIMEOUT . "): $unique_url_string ($hash)-->";
       fclose($handle);
-
       //check the cached file
       if (strpos($page, FLAG_BAR_BEGIN) <= 0 && strpos($page, FLAG_BAR_END) <= 0) {
         gltr_debug("cache: deleting BAD cached version ($filename) for url:" .
           gltr_get_self_url());
         //bad cached file
         unlink($filename);
-      }
-    } else {
+        $from_cache = false;
+      } else {
+   			$from_cache = true;
+			}
+    } 
 
+    if (!$from_cache) {
+
+      gltr_debug("Connection to engine for url:" . gltr_get_self_url());
       $page = gltr_translate($lang, $url);
       gltr_debug("cache: caching ($filename) url:" . gltr_get_self_url());
       $handle = fopen($filename, "wb");

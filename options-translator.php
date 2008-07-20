@@ -24,7 +24,6 @@ if (isset($_POST['stage'])){
 	//submitting something
 	$gltr_base_lang 						= $_POST['gltr_base_lang'];
 	$gltr_col_num 							= $_POST['gltr_col_num'];
-	$gltr_cache_hours_timeout 	= $_POST['gltr_cache_hours_timeout'];
 	$gltr_html_bar_tag 					= $_POST['gltr_html_bar_tag'];
 	$gltr_my_translation_engine = $_POST['gltr_my_translation_engine'];
 	
@@ -68,12 +67,6 @@ if (isset($_POST['stage'])){
 	  } else {
 	  	//update options button pressed
 	  	$iserror = false;
-	    $timeout = $_POST['gltr_cache_hours_timeout'];
-	    
-	    if (!preg_match('/^[0-9]*$/i', $timeout) && isset($_POST['gltr_use_cache'])){
-	      $message = "Error: invalid cache timeout value. Please insert a numeric value or leave it blank.";
-	      $iserror = true;
-	    } 
 	    
 	    if (count ($gltr_preferred_languages) == 0) {
 	      $message .= "Error: you must choose almost one of the available translations.";
@@ -84,7 +77,6 @@ if (isset($_POST['stage'])){
 	      if ($timeout == "") $timeout = "10800";
 	      update_option('gltr_base_lang', $_POST['gltr_base_lang']);
 	      update_option('gltr_col_num', $_POST['gltr_col_num']);
-	      update_option('gltr_cache_hours_timeout', $timeout);
 	      update_option('gltr_html_bar_tag', $_POST['gltr_html_bar_tag']);
 	      update_option('gltr_my_translation_engine', $_POST['gltr_my_translation_engine']);
 	      update_option('gltr_preferred_languages', array());
@@ -110,13 +102,11 @@ if (isset($_POST['stage'])){
 	$gltr_base_lang = get_option('gltr_base_lang');
 	$gltr_col_num = get_option('gltr_col_num');
 	$gltr_use_cache = get_option('gltr_use_cache');
-	$gltr_cache_hours_timeout = get_option('gltr_cache_hours_timeout');
 	$gltr_html_bar_tag = get_option('gltr_html_bar_tag');
 	$gltr_my_translation_engine = get_option('gltr_my_translation_engine');
 	$gltr_preferred_languages = get_option('gltr_preferred_languages');
 	$gltr_ban_prevention = get_option('gltr_ban_prevention');
 
-  if ($gltr_cache_hours_timeout == "") $gltr_cache_hours_timeout = "24";
 
 	$gltr_current_engine = $gltr_available_engines[$gltr_my_translation_engine];
 	$gltr_lang_matrix = $gltr_current_engine->get_languages_matrix();
@@ -360,14 +350,6 @@ if($message!="") { ?>
 	        	The cache invalidation will be automatically (and smartly) handled when a post will be created, deleted or updated.
         </label>
       </td></tr>
-      <!--
-  		<tr><td>
-        <label><?php _e('Refresh standard cache every ') ?>
-	        	<input name="gltr_cache_hours_timeout" id="gltr_cache_hours_timeout" size="5" maxlength="8"
-	        	value="<?php echo $gltr_cache_hours_timeout ?>" /> hours. <br/>If you leave it empty, the default value <strong>"24"</strong> (hours) will be used.
-        </label>
-      </td></tr>
-      -->
   		<tr><td>
         <label>
         <input type="submit" name="gltr_erase_cache" value="<?php _e('Erase cache') ?> &raquo;" />        

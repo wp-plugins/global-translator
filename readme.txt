@@ -60,13 +60,13 @@ to add its custom permalink rules. In order to identify the problem, try to deac
 if nothing change check your .htaccess file and comment out all the non-standard rewrite rules. If you discover a conflicting 
 plugin please send me an email (davide at nothing2hide.net).
 
-= "Translation engine temporarily not available" message when using Google Translations engine =
+= "Sorry, the translation engine is temporarily not available. Please try again later" message when using Google Translations engine =
 
 If Google receives too many translation requests for a single IP address (it usually happens when your site is crawled by 
 spiders or bots which perform massive requests), it sometimes decides to temporarily block requests from your IP.
 At now you have three different options:
 	1. make sure to enable caching and ban prevention from the Global Translator options page
-	2. try another translation engine 
+	2. try another translation engine (i.e. Promt translation engine)
 	3. block bots access to your translated URL paths (/en/*, /fr/*, ...) on your robots.txt file
 
 = The translated page has a bad/broken layout =
@@ -79,7 +79,7 @@ I suggest you to try all the translation engines in order to choose the best one
 In general this just requires that you replace the existing files with the new ones. Sometimes its a good idea to delete all 
 the files in wp-content/plugins/global-translator/ and re-upload them fresh.
 
-= I've just changed my perlalinks structure and Global Translator doesn't translate anymore =
+= I've just changed my permalinks structure or just upgraded Wordpress to a newer version and Global Translator doesn't translate anymore =
 
-Every time you update the permalinks structure of your blog, the custom rules previously added by Global Translator are overriden.
+Everytime the permalinks structure of your blog changes, the custom rules previously added by Global Translator are overriden.
 To solve the problem you must just refresh the Global Translator Options ("Update Options" button) on the administrative area.
