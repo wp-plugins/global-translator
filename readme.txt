@@ -4,7 +4,7 @@ Author: Davide Pozza
 Contributors: 
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.0
-Tested up to: 2.5
+Tested up to: 2.6
 Stable Tag: 0.9
 
 Automatically translates your blog in fourteen different languages!
@@ -60,7 +60,7 @@ to add its custom permalink rules. In order to identify the problem, try to deac
 if nothing change check your .htaccess file and comment out all the non-standard rewrite rules. If you discover a conflicting 
 plugin please send me an email (davide at nothing2hide.net).
 
-= Error 403 when using Google Translations engine =
+= "Translation engine temporarily not available" message when using Google Translations engine =
 
 If Google receives too many translation requests for a single IP address (it usually happens when your site is crawled by 
 spiders or bots which perform massive requests), it sometimes decides to temporarily block requests from your IP.

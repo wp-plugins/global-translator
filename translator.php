@@ -1,14 +1,5 @@
 <?php
-/*
-Plugin Name: Global Translator
-Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
-Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 0.9
-Author: Davide Pozza
-Author URI: http://www.nothing2hide.net/
-Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
 
-*/
 
 /*  Copyright 2006  Davide Pozza  (email : davide@nothing2hide.net)
 
@@ -64,6 +55,12 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+0.9.1
+- Activated new Prompt configuration
+- Fixed little issue with Portuguese translation
+- Fixed Swedish and Czech flags icons (thanks to Mijk Bee)
+- Added event-based cache invalidation and increased default cache timeout
+
 0.9
 - Added support for 10 new languages for Google Translations engine: Bulgarian, Czech, Croat, Danish, Finnish, Hindi, Polish, Rumanian, Swedish, Greek, Norwegian
 - Updated flags icons (provided by famfamfam.com)
@@ -165,8 +162,6 @@ define('BASE_LANG', get_option('gltr_base_lang'));
 define('BAR_COLUMNS', get_option('gltr_col_num'));
 define('USE_CACHE', get_option('gltr_use_cache'));
 define('BAN_PREVENTION', get_option('gltr_ban_prevention'));
-define('CACHE_TIMEOUT', get_option('gltr_cache_timeout'));
-define('POST_CACHE_TIMEOUT', get_option('gltr_posts_cache_timeout'));
 define('HTML_BAR_TAG', get_option('gltr_html_bar_tag'));
 define('TRANSLATION_ENGINE', get_option('gltr_my_translation_engine'));
 define('BLOG_URL', get_settings('siteurl'));
@@ -180,6 +175,19 @@ add_filter('query_vars', 'gltr_insert_my_rewrite_query_vars');
 add_action('parse_query', 'gltr_insert_my_rewrite_parse_query');
 add_action('admin_menu', 'gltr_add_options_page');
 add_action('init', 'gltr_translator_init');
+
+add_action('publish_post', 'erase_common_cache_files');
+add_action('edit_post', 'erase_common_cache_files');
+add_action('delete_post', 'erase_common_cache_files');
+add_action('publish_phone', 'erase_common_cache_files');
+add_action('trackback_post', 'erase_common_cache_files');
+add_action('pingback_post', 'erase_common_cache_files');
+add_action('comment_post', 'erase_common_cache_files');
+add_action('edit_comment', 'erase_common_cache_files');
+add_action('wp_set_comment_status', 'erase_common_cache_files');
+//add_action('delete_comment', 'erase_common_cache_files');
+//add_action('switch_theme', 'erase_common_cache_files');
+
 
 function gltr_translator_init()
 {
@@ -195,7 +203,7 @@ function gltr_translator_init()
   if (REWRITEON) {
     add_filter('generate_rewrite_rules', 'gltr_translations_rewrite');
   }
-  gltr_debug("GT $gltr_VERSION initialized.");
+  //gltr_debug("GT $gltr_VERSION initialized.");
 }
 
 function gltr_build_translation_url($srcLang, $destLang, $urlToTransl)
@@ -274,30 +282,32 @@ function gltr_http_get_content($resource){
       return "$errstr ($errno)<br />\n";
     } else {
       fputs($fp, $req, strlen($req)); // send request
-      gltr_debug("Translation request: $req");
+      //gltr_debug("Translation request: $req");
       $buf = '';
       $isFlagBar = false;
       $flagBarWritten = false;
       $beginFound = false;
       $endFound = false;
       $inHeaders = true;
+			$prevline='';
       while (!feof($fp)) {
         $line = fgets($fp);
         if ($inHeaders) {
-          if (trim($line) == '') {
+          if (trim($line) == '' && trim($prevline) == '') {
             $inHeaders = false;
             continue;
           }
+          $prevline = $line;
           if (!preg_match('/([^:]+):\\s*(.*)/', $line, $m)) {
             // Skip to the next header
             continue;
-          }
+          } 
           $key = strtolower(trim($m[1]));
           $val = trim($m[2]);
 					if ($key == 'location') {
             $redirect_url = $val;
             $pos = strpos($redirect_url, 'http://sorry.google.com');
-						gltr_debug("redirect[$pos]:: $redirect_url");
+						//gltr_debug("redirect[$pos]:: $redirect_url");
             if ($pos !== false){
             	$buf = "<html><body><center><br /><br /><b>Sorry, the translation engine is temporarily not available. Please try again later</b><br /><br /><a href='".get_settings('home')."'>Home page</a></center></body></html>";
             	$isredirect = false;
@@ -308,7 +318,7 @@ function gltr_http_get_content($resource){
           }
           continue;
         }
-
+				
         $buf .= $line . "\n";
       } //end while
     }
@@ -347,9 +357,11 @@ function gltr_clean_translated_page($buf, $lang)
 
   //let's remove custom header added by certain engines
   if (TRANSLATION_ENGINE == 'promt') {
-    $buf = preg_replace("/\<div class='PROMT_HEADER'(.*)\<\/div\>/i", "", $buf);
-    $buf = preg_replace("/\<span class=\"UNKNOWN_WORD\"\>([^\<]*)\<\/span\>/i", "\\1",
-      $buf);
+    //$buf = preg_replace("/\<div class='PROMT_HEADER'(.*)\<\/div\>/i", "", $buf);
+    //$buf = preg_replace("/\<span class=\"UNKNOWN_WORD\"\>([^\<]*)\<\/span\>/i", "\\1",$buf);
+    $buf = preg_replace("/onmouseout=\"OnMouseLeaveSpan\(this\)\"/i", "",$buf);
+    $buf = preg_replace("/onmouseover=\"OnMouseOverSpanTran\(this,event\)\"/i", "",$buf);
+    $buf = preg_replace("/<span class=\"src_para\">/i", "<span style=\"display:none;\">",$buf);
   } else if (TRANSLATION_ENGINE == 'freetransl') {
     $buf = preg_replace("/\<div(.*)http:\/\/www\.freetranslation\.com\/images\/logo\.gif(.*)\<\/div\>/i", "", $buf);
     $buf = str_replace(array("{L","L}"), array("",""), $buf);
@@ -411,18 +423,8 @@ function gltr_get_flags_bar()
 	$is_browser = gltr_is_browser();
 	$is_search_engine = !$is_browser;
 	$is_indexable_page = (	(function_exists("is_single") && is_single())	|| (function_exists("is_page") 	&& is_page()) 	|| (function_exists("is_home") 	&& is_home()) );
-  /*
-	gltr_debug("gltr_get_flags_bar==>is_category=".is_category().
-	"|is_tag=".is_tag().
-	"|is_single=".is_single().
-	"|is_page=".is_page().
-	"|is_home=".is_home().
-	"|gltr_is_translation_engine=".gltr_is_translation_engine().
-	"|gltr_is_browser=".gltr_is_browser());
-	gltr_debug("gltr_get_flags_bar==>is_original_page=$is_original_page|is_indexable_page=$is_indexable_page|is_search_engine=$is_search_engine|is_browser=$is_browser");  	
-  	*/														
-  if ( ($is_original_page && $is_indexable_page && $is_search_engine) || $is_browser || !BAN_PREVENTION){
-	//if ( $show_links || !BAN_PREVENTION){
+
+  //if ( ($is_original_page && $is_indexable_page && $is_search_engine) || $is_browser || !BAN_PREVENTION){
 
     if ($use_table)
       $buf .= "<table border='0'><tr>";
@@ -477,10 +479,10 @@ function gltr_get_flags_bar()
       $buf .= "</tr><tr><td colspan=\"$num_cols\">$n2hlink</td></tr></table>";
     else
       $buf .= "<div id=\"transl_sign\">$n2hlink</div></div>";
-  } else {
-  	$n2hlink = "<a href=\"http://www.nothing2hide.net\">By N2H</a>";
-    $buf .= $n2hlink;
-  }    
+  //} else {
+  //	$n2hlink = "<a href=\"http://www.nothing2hide.net\">By N2H</a>";
+  //  $buf .= $n2hlink;
+  //}    
   $buf .= FLAG_BAR_END . "\n"; //final marker
   return $buf;
 }
@@ -499,7 +501,6 @@ function build_flags_bar()
 function gltr_get_translated_url($language, $url)
 {
   if (REWRITEON) {
-
 
     $pattern = '/' . BLOG_HOME_ESCAPED . '\\/((' . LANGS_PATTERN . ')[\\/])*(.*)/';
 
@@ -593,33 +594,14 @@ function gltr_get_page_content($lang, $url)
 {
   $page = '';
   if (USE_CACHE) {
-    $refresh = CACHE_TIMEOUT;
-    //$unique_url_string = substr(gltr_get_self_url(), 7) . '|G|' . serialize($_GET) . '|P|' . serialize($_POST);
-    //$hash = sha1($unique_url_string);
-
-    //$req = $_SERVER['SERVER_NAME'] . preg_replace('/#.*$/', '', $_SERVER['REQUEST_URI'] . gltr_get_cookies());
-    //$req = preg_replace('/(.*)\//', '\\1', $req);
-    //$hash = md5($req);
-    
-    $req = preg_replace('/(.*)\/$/', '\\1', $_SERVER['REQUEST_URI']);
-    $req = preg_replace('/#.*$/', '', $req);
-    $hash = str_replace(array('?','<','>',':','\\','/','*','|','"'), '_', $req);
+    $hash = gltr_hashReqUri($_SERVER['REQUEST_URI']);
     gltr_debug("Hashing uri: $req to: $hash");
     $cachedir = dirname(__file__) . '/cache';
 
     if (!is_dir($cachedir)) {
       mkdir($cachedir, 0777);
     }
-    
-    if (BAN_PREVENTION){
-			if (gltr_is_browser())
-				$cachedir .= '/normal';
-			else
-				$cachedir .= '/search-engine';
-		} else {
-			$cachedir .= '/normal';
-		}
-		
+
     if (!is_dir($cachedir)) {
     	gltr_debug("Creating cache dir: $cachedir");
       mkdir($cachedir, 0777);
@@ -634,8 +616,7 @@ function gltr_get_page_content($lang, $url)
     	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cached file <em>$filename</em> cannot be modified. <br />Please chmod it to 777 or disable the caching support from the admin page.</b>";	
     }
     
-    if (file_exists($filename) && ((time() - @filemtime($filename)) < $refresh) &&
-      filesize($filename) > 0) {
+    if (file_exists($filename) && filesize($filename) > 0) {
       // We are done, just return the file and exit
       gltr_debug("cache: returning cached version ($hash) for url:" .
         gltr_get_self_url());
@@ -652,12 +633,6 @@ function gltr_get_page_content($lang, $url)
         unlink($filename);
       }
     } else {
-      if (file_exists($filename) && ((time() - @filemtime($filename)) > $refresh)) {
-        gltr_debug("cache: deleting old cached version ($filename) for url:" .
-          gltr_get_self_url());
-        //old cached file
-        unlink($filename);
-      }
 
       $page = gltr_translate($lang, $url);
       gltr_debug("cache: caching ($filename) url:" . gltr_get_self_url());
@@ -681,6 +656,13 @@ function gltr_get_page_content($lang, $url)
   return $page;
 }
 
+function gltr_hashReqUri($uri){
+    $req = preg_replace('/(.*)\/$/', '\\1', $uri);
+    $req = preg_replace('/#.*$/', '', $req);
+    $hash = str_replace(array('?','<','>',':','\\','/','*','|','"'), '_', $req);
+    return $hash;
+}
+
 function gltr_filter_content($content)
 {
   global $gltr_result;
@@ -697,25 +679,6 @@ function gltr_insert_my_rewrite_parse_query($query)
 {
   global $gltr_result;
   if (isset($query->query_vars['lang'])) {
-		/*
-	  $perm_pages = ($query->is_single	|| $query->is_page || $query->is_home);  	
-		gltr_debug("==>ALT is_category=".$query->is_category.
-		"|is_tag=".$query->is_tag.
-		"|is_single=".$query->is_single.
-		"|is_page=".$query->is_page.
-		"|is_home=".$query->is_home.
-		"|is_browser=".is_browser());
-  	if (!is_browser() && !$perm_pages && BAN_PREVENTION){
-  		gltr_debug("Limiting bot/crawler access to resource:$url");
-  		//header("Status: 404");
-  		header('HTTP/1.x 404 Not Found'); 
-  		die();
-  	}else if (is_user_agent_allowed()){
-      $lang = $query->query_vars['lang'];
-      $url = $query->query_vars['url'];
-      if (empty($url)) {
-        $url = '';
-      }*/
   	
 	  if (!is_user_agent_allowed() && BAN_PREVENTION){
   		gltr_debug("Limiting bot/crawler access to resource:$url");
@@ -789,7 +752,6 @@ function gltr_is_browser() {
   } else {
     while (list($key, $val) = each($browsers_ua)) {
       if (strstr($ua, strtoupper($val))) {
-      	gltr_debug("AAA===>".$val);
         return true;
       }
     }
@@ -851,6 +813,57 @@ function is_user_agent_allowed()
     gltr_debug("Warning: unknown user agent: $ua");
   }
   return true;
+}
+
+function erase_common_cache_files($post_ID) {
+  $single_post_pattern = "";
+  
+	if (isset($post_ID)){
+  	if (REWRITEON) {
+  		$uri = substr (get_permalink($post_ID), strlen(get_option('home')) );
+  		$single_post_pattern = gltr_hashReqUri($uri);
+  	} else {
+  		$single_post_pattern = $post_ID;
+  	}
+	}
+
+  $cachedir = dirname(__FILE__) . '/cache';
+  if (file_exists($cachedir) && is_dir($cachedir) && is_readable($cachedir)) {
+    $handle = opendir($cachedir);
+    
+    
+    while (FALSE !== ($item = readdir($handle))) {
+    	if (REWRITEON) {
+        if(	$item != '.' && $item != '..' && (
+													strstr($item, '_category') || 
+													preg_match('/_(' . LANGS_PATTERN . ')_[0-9]{4}_[0-9]{2}$/', $item) ||
+													preg_match('/_(' . LANGS_PATTERN . ')_page_[0-9]+$/', $item) ||
+													preg_match('/_(' . LANGS_PATTERN . ')_tag_(.*)$/', $item) ||
+													preg_match('/_(' . LANGS_PATTERN . ')$/', $item) ||
+													preg_match('/_(' . LANGS_PATTERN . ')'.$single_post_pattern.'$/', $item) )
+        	) {
+          $path = $cachedir.'/'.$item;
+          if (file_exists($path) && is_file($path)){
+  	        gltr_debug("Erase event. Erasing $path");
+          	unlink($path);
+          }
+        }
+      } else {
+        if(	$item != '.' && $item != '..' && (!preg_match('/_p=[0-9]+/', $item) || preg_match('/_p='.$single_post_pattern.'/', $item))) {
+          $path = $cachedir.'/'.$item;
+          if (file_exists($path) && is_file($path)){
+  	        gltr_debug("Erase event [no permalink]. Erasing $path");
+          	unlink($path);
+          }
+        }
+      }
+    }
+    $message = "Cache dirs successfully erased.";
+  } else {
+    //$message = "Unable to erase cache or cache dir '$cachedir' doesn't exist.";
+    //break;
+  }
+  
 }
 
 function widget_global_translator_init() {

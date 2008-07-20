@@ -761,7 +761,8 @@ $babelfishEngine = new gltr_translation_engine(
 
 $promtEngine = new gltr_translation_engine(
   'promt',
-  'http://beta.online-translator.com/url/tran_url.asp?prmtlang=en&autotranslate=on&url=${URL}&direction=${SRCLANG}${DESTLANG}',
+  'http://www.online-translator.com/url/translation.aspx?autotranslate=on&sourceURL=${URL}&direction=${SRCLANG}${DESTLANG}',
+  //'http://beta.online-translator.com/url/tran_url.asp?prmtlang=en&autotranslate=on&url=${URL}&direction=${SRCLANG}${DESTLANG}',
   //old version 'http://www.online-translator.com/url/tran_url.asp?url=${URL}&direction=${SRCLANG}${DESTLANG}&cp1=UTF-8&cp2=UTF-8&autotranslate=on',
   "/href=\"(.*?)url=(.*?)\"([\s|>]{1})/i",
   "href=\"\\2\" \\3",
@@ -787,7 +788,7 @@ $promtEngine = new gltr_translation_engine(
   'fr'    => array( 'fr'=>'Francais',
                     'en'=>'Anglais',
                     'de'=>'Allemand',
-                    'pt'=>'Russian', //
+                    'ru'=>'Russian', //
                     'es'=>'Espagnol'),
   'es'    => array( 'es'=>'Espanol',
                     'en'=>'Ingles',
@@ -867,5 +868,5 @@ $gltr_available_engines['promt'] = $promtEngine;
 $gltr_available_engines['babelfish'] = $babelfishEngine;
 $gltr_available_engines['freetransl'] = $freetranslationEngine;
 
-$gltr_VERSION='0.9';
+$gltr_VERSION='0.9.1';
 ?>
