@@ -862,6 +862,8 @@ $freetranslationEngine = new gltr_translation_engine(
     )
   );
 
+$well_known_extensions =  array('swf','gif','jpg','jpeg','bmp','gz','zip','rar','tar','png','xls','doc','ppt','tiff','avi','mpeg','mp3','mov','mp4');
+
 $gltr_available_engines = array();
 $gltr_available_engines['google'] = $googleEngine;
 $gltr_available_engines['promt'] = $promtEngine;

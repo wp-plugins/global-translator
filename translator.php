@@ -56,10 +56,11 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 Change Log
 0.9.1
+- Added file extension exclusion for images and resources (they don't need to be translated)
 - Activated new Prompt configuration
 - Fixed little issue with Portuguese translation
 - Fixed Swedish, Arabic and Czech flags icons (thanks to Mijk Bee and Nigel Howarth)
-- Added event-based cache invalidation and increased default cache timeout
+- Added new (and better) event-based cache invalidation system
 
 0.9
 - Added support for 10 new languages for Google Translations engine: Bulgarian, Czech, Croat, Danish, Finnish, Hindi, Polish, Rumanian, Swedish, Greek, Norwegian
@@ -176,17 +177,17 @@ add_action('parse_query', 'gltr_insert_my_rewrite_parse_query');
 add_action('admin_menu', 'gltr_add_options_page');
 add_action('init', 'gltr_translator_init');
 
-add_action('publish_post', 'erase_common_cache_files');
-add_action('edit_post', 'erase_common_cache_files');
-add_action('delete_post', 'erase_common_cache_files');
-add_action('publish_phone', 'erase_common_cache_files');
-add_action('trackback_post', 'erase_common_cache_files');
-add_action('pingback_post', 'erase_common_cache_files');
-add_action('comment_post', 'erase_common_cache_files');
-add_action('edit_comment', 'erase_common_cache_files');
-add_action('wp_set_comment_status', 'erase_common_cache_files');
-//add_action('delete_comment', 'erase_common_cache_files');
-//add_action('switch_theme', 'erase_common_cache_files');
+add_action('publish_post', 'gltr_erase_common_cache_files');
+add_action('edit_post', 'gltr_erase_common_cache_files');
+add_action('delete_post', 'gltr_erase_common_cache_files');
+add_action('publish_phone', 'gltr_erase_common_cache_files');
+add_action('trackback_post', 'gltr_erase_common_cache_files');
+add_action('pingback_post', 'gltr_erase_common_cache_files');
+add_action('comment_post', 'gltr_erase_common_cache_files');
+add_action('edit_comment', 'gltr_erase_common_cache_files');
+add_action('wp_set_comment_status', 'gltr_erase_common_cache_files');
+//add_action('delete_comment', 'gltr_erase_common_cache_files');
+//add_action('switch_theme', 'gltr_erase_common_cache_files');
 
 
 function gltr_translator_init()
@@ -348,12 +349,15 @@ function gltr_clean_translated_page($buf, $lang)
 	  $nofollow = "rel=\"nofollow\"";
 	else
 	  $nofollow = " ";
+	  
+
   if (REWRITEON) {
-    $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
+  	//$pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
+    $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback\/)(?!\/feed\/)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
   	$repl = "<a $nofollow href=\"" . BLOG_HOME . '/' . $lang . "\\1\" \\5>";
     $buf = preg_replace($pattern, $repl, $buf);
   } else {
-    $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "\/\?(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
+    $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "\/\?(((?![\"])(?!\/trackback\/)(?!\/feed\/)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
     $repl = "<a $nofollow href=\"" . BLOG_HOME . "?\\1&lang=$lang\" \\5>";
     $buf = preg_replace($pattern, $repl, $buf);
     
@@ -386,6 +390,16 @@ function gltr_clean_translated_page($buf, $lang)
     gltr_debug("Flags bar tokens not found: unhandled page type (RSS feed?)");
   }
   return $buf;
+}
+
+function gltr_get_extensions_skip_pattern(){
+	global $well_known_extensions;
+	
+	$res = "";
+	foreach ($well_known_extensions as $key => $value) {
+		$res .= "(?!\.$value)";
+	}
+	return $res;
 }
 
 function gltr_build_request($host, $http_req)
@@ -457,7 +471,7 @@ function gltr_get_flags_bar()
       $flg_image_url = gltr_get_flag_image($key);
       if ($use_table)
         $buf .= "<td>";
-      $buf .= "<a id='flag_$key' href='$flg_url' hreflang='$key' $lnk_attr><img id='flag_img_$key' src='$flg_image_url' alt='$value flag' title='$value'  border='0' /></a>";
+      $buf .= "<a id='flag_$key' href='$flg_url' hreflang='$key' $lnk_attr><img id='flag_img_$key' src='$flg_image_url' title='$value' alt='$value flag' title='$value'  border='0' /></a>";
       if ($use_table)
         $buf .= "</td>";
       if ($num_cols > 0)
@@ -692,7 +706,7 @@ function gltr_insert_my_rewrite_parse_query($query)
   global $gltr_result;
   if (isset($query->query_vars['lang'])) {
   	
-	  if (!is_user_agent_allowed() && BAN_PREVENTION){
+	  if (!gltr_is_user_agent_allowed() && BAN_PREVENTION){
   		gltr_debug("Limiting bot/crawler access to resource:$url");
   		header('HTTP/1.x 404 Not Found'); 
   		die();
@@ -771,7 +785,7 @@ function gltr_is_browser() {
   return false;
 }
 
-function is_user_agent_allowed()
+function gltr_is_user_agent_allowed()
 {
 
   $not_allowed = array("Wget", "EmailSiphon", "WebZIP", "MSProxy/2.0", "EmailWolf",
@@ -827,7 +841,7 @@ function is_user_agent_allowed()
   return true;
 }
 
-function erase_common_cache_files($post_ID) {
+function gltr_erase_common_cache_files($post_ID) {
   $single_post_pattern = "";
   
 	if (isset($post_ID)){
