@@ -147,7 +147,7 @@ Change Log
 
 require_once (dirname(__file__).'/header.php');
 
-define('DEBUG', true);
+define('DEBUG', false);
 
 
 define('FLAG_BAR_BEGIN', '<!--FLAG_BAR_BEGIN-->');
