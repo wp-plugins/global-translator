@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 0.9.1.1
+Version: 0.9.1.2
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -160,12 +160,13 @@ Change Log
 
 require_once (dirname(__file__).'/header.php');
 
-define('DEBUG', false);
+define('DEBUG', true);
 
 
 define('FLAG_BAR_BEGIN', '<!--FLAG_BAR_BEGIN-->');
 define('FLAG_BAR_END', '<!--FLAG_BAR_END-->');
-define('USER_AGENT','Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)');
+//define('USER_AGENT','Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)');
+define('USER_AGENT','Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.2.1) Gecko/20021204');
 define('LANGS_PATTERN', 'it|ko|zh-CN|pt|en|de|fr|es|ja|ar|ru|el|nl|zh|zt|no|bg|cs|hr|da|fi|hi|pl|ro|sv');
 define('LANGS_PATTERN_WITH_SLASHES', '/it/|/ko/|/zh-CN/|/pt/|/en/|/de/|/fr/|/es/|/ja/|/ar/|/ru/|/el/|/nl/|/zh/|/zt/|/no/|/bg/|/cs/|/hr/|/da/|/fi/|/hi/|/pl/|/ro/|/sv/');
 define('LANGS_PATTERN_WITHOUT_FINAL_SLASH', '/it|/ko|/zh-CN|/pt|/en|/de|/fr|/es|/ja|/ar|/ru|/el|/nl|/zh|/zt|/no|/bg|/cs|/hr|/da|/fi|/hi|/pl|/ro|/sv');
@@ -192,12 +193,12 @@ add_action('init', 'gltr_translator_init');
 add_action('publish_post', 'gltr_erase_common_cache_files');
 add_action('edit_post', 'gltr_erase_common_cache_files');
 add_action('delete_post', 'gltr_erase_common_cache_files');
-add_action('publish_phone', 'gltr_erase_common_cache_files');
-add_action('trackback_post', 'gltr_erase_common_cache_files');
-add_action('pingback_post', 'gltr_erase_common_cache_files');
-add_action('comment_post', 'gltr_erase_common_cache_files');
-add_action('edit_comment', 'gltr_erase_common_cache_files');
-add_action('wp_set_comment_status', 'gltr_erase_common_cache_files');
+//add_action('publish_phone', 'gltr_erase_common_cache_files');
+//add_action('trackback_post', 'gltr_erase_common_cache_files');
+//add_action('pingback_post', 'gltr_erase_common_cache_files');
+//add_action('comment_post', 'gltr_erase_common_cache_files');
+//add_action('edit_comment', 'gltr_erase_common_cache_files');
+//add_action('wp_set_comment_status', 'gltr_erase_common_cache_files');
 //add_action('delete_comment', 'gltr_erase_common_cache_files');
 //add_action('switch_theme', 'gltr_erase_common_cache_files');
 
@@ -288,10 +289,6 @@ function gltr_http_get_content($resource){
     $http_q = $path . '?' . $query;
 
     $req = gltr_build_request($host, $http_q);
-		
-		//CONNECT <my home ip>:23 HTTP/1.0
-		//Host: <my home ip>:23
-
 				
     $fp = @fsockopen($host, $port, $errno, $errstr);
 
@@ -339,7 +336,7 @@ function gltr_http_get_content($resource){
           continue;
         }
 				
-        $buf .= $line . "\n";
+        $buf .= $line;
       } //end while
     }
     fclose($fp);
@@ -389,7 +386,10 @@ function gltr_clean_translated_page($buf, $lang)
     $buf = preg_replace("/\<div(.*)http:\/\/www\.freetranslation\.com\/images\/logo\.gif(.*)\<\/div\>/i", "", $buf);
     $buf = str_replace(array("{L","L}"), array("",""), $buf);
   } else if (TRANSLATION_ENGINE == 'google') {
+    $buf = preg_replace("/onmouseout=\"_tipoff\(\)\"/i", "",$buf);
+    $buf = preg_replace("/onmouseover=\"_tipon\(this\)\"/i", "",$buf);
     $buf = preg_replace("/_setupIW()/", "", $buf);
+    $buf = preg_replace("/<span class=\"google-src-text\"[^>]*>/i", "<span style=\"display:none;\">",$buf);
   }
 
   //insert the flags bar
@@ -420,7 +420,7 @@ function gltr_build_request($host, $http_req)
   $res .= "Host: $host\r\n";
   $res .= "User-Agent: " . USER_AGENT . " \r\n";
   //$res .= "Content-Type: application/x-www-form-urlencoded\r\n";
-  $res .= "Content-Length: 0\r\n";
+  //$res .= "Content-Length: 0\r\n";
   $res .= "Connection: close\r\n\r\n";
   return $res;
 }
