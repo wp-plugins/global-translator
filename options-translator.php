@@ -1,12 +1,35 @@
 <?php
 require_once (dirname(__file__).'/header.php');
 
+function gltr_get_dir_size($dir){
+	$cachesize = 0;
+  if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
+    $handle = opendir($dir);
+    while (FALSE !== ($item = readdir($handle))) {
+      if($item != '.' && $item != '..') {
+        $path = $dir.'/'.$item;
+        if (file_exists($path) && is_file($path))
+        	$cachesize += filesize($path);
+      }
+    }
+  }
+  closedir($handle);	
+  return $cachesize;
+}
+function gltr_get_cache_size(){
+  $cachedir = dirname(__FILE__) . '/cache';
+	return gltr_get_dir_size($cachedir);
+}
+function gltr_get_stale_size(){
+  $cachedir = dirname(__FILE__) . '/cache/stale';
+	return gltr_get_dir_size($cachedir);
+}
+
 load_plugin_textdomain('gltr'); // NLS
 
 /*Lets add some default options if they don't exist*/
 add_option('gltr_base_lang', 'en');
 add_option('gltr_col_num', '0');
-add_option('gltr_use_cache', false);
 add_option('gltr_html_bar_tag', 'TABLE');
 add_option('gltr_my_translation_engine', 'google');
 add_option('gltr_preferred_languages', array());
@@ -27,11 +50,7 @@ if (isset($_POST['stage'])){
 	$gltr_html_bar_tag 					= $_POST['gltr_html_bar_tag'];
 	$gltr_my_translation_engine = $_POST['gltr_my_translation_engine'];
 	
-	if(isset($_POST['gltr_use_cache'])) 
-		$gltr_use_cache = true; 
-	else 
-		$gltr_use_cache = false;
-	
+
 	if (isset($_POST['gltr_preferred_languages']))
 		$gltr_preferred_languages = $_POST['gltr_preferred_languages'];
 	
@@ -58,6 +77,7 @@ if (isset($_POST['stage'])){
 	          	unlink($path);
 	        }
 	      }
+	      closedir($handle);
 	      $message = "Cache dirs successfully erased.";
 	    } else {
 	      //$message = "Unable to erase cache or cache dir '$cachedir' doesn't exist.";
@@ -82,10 +102,6 @@ if (isset($_POST['stage'])){
 	      update_option('gltr_preferred_languages', array());
 	      update_option('gltr_preferred_languages', $_POST['gltr_preferred_languages']);
 	
-	      if(isset($_POST['gltr_use_cache']))
-	        update_option('gltr_use_cache', true);
-	      else
-	        update_option('gltr_use_cache', false);
 	
 	      if(isset($_POST['gltr_ban_prevention']))
 	        update_option('gltr_ban_prevention', true);
@@ -101,7 +117,6 @@ if (isset($_POST['stage'])){
 	//page loaded by menu: retrieve stored options
 	$gltr_base_lang = get_option('gltr_base_lang');
 	$gltr_col_num = get_option('gltr_col_num');
-	$gltr_use_cache = get_option('gltr_use_cache');
 	$gltr_html_bar_tag = get_option('gltr_html_bar_tag');
 	$gltr_my_translation_engine = get_option('gltr_my_translation_engine');
 	$gltr_preferred_languages = get_option('gltr_preferred_languages');
@@ -132,6 +147,19 @@ if (isset($_POST['stage'])){
     $message = "Unable to complete Global Translator initialization. Plese chmod 777 the following directory:
     <ul><li>".$cachedir."</li></ul>";
   } 
+  
+  if (is_dir($cachedir) && is_readable($cachedir) && is_writable($cachedir)){
+	  $staledir = dirname(__file__) . '/cache/stale';
+  	if (!is_dir($staledir)){
+	  	if(!mkdir($staledir, 0777)){
+	      $message = "Unable to complete Global Translator initialization. Plese manually create and chmod 777 the following directory:
+	      <ul><li>".$staledir."</li></ul>";
+	  	} 
+		} else if (!is_readable($staledir) || !is_writable($staledir) ){
+	    $message = "Unable to complete Global Translator initialization. Plese chmod 777 the following directory:
+	    <ul><li>".$staledir."</li></ul>";
+	  } 
+  }
 }
 
 //foreach($gltr_preferred_languages as $key => $value){echo "$value<br>";}
@@ -338,40 +366,38 @@ if($message!="") { ?>
     </fieldset>
 
   	<fieldset class="options">
-  		<h3><?php _e('Caching support') ?></h3>
+  		<h3><?php _e('Cache management') ?></h3>
   		<table width="100%" cellpadding="5" class="editform">
   		<tr><td>
-        <label><?php _e('Enable caching support') ?>
-	        	<input name="gltr_use_cache" type="checkbox" id="gltr_use_cache"  
-	        	
-	        	<?php if($gltr_use_cache == TRUE) {?> checked="checked" <?php } ?> /><br /><br />
-	        	By enabling this option, Global Translator will try to create a directory named named "<b>cache</b>" inside its installation path (<b><?echo dirname(__FILE__)?></b>).<br /> 
-	        	If your web server gives you permission problems, try to manually create a "<b>cache</b>" directory and make it writable by the web server (chmod 777).
-	        	The cache invalidation will be automatically (and smartly) handled when a post will be created, deleted or updated.
+        <label>
+	        	Global Translator uses a fast, smart, optimized, self-cleaning and built-in caching system in order to drastically reduce the connections to the translation engines.
+						This feature cannot be optional and is needed in order to prevent from banning by the translation services. For the same reason the translation process will not be 
+						immediate and the full translation of the blog could take a while: this is because only a translation request every 4 minutes will be allowed. 
+	        	<br /> 
+	        	The cache invalidation will be automatically (and smartly) handled when a post is created, deleted or updated.
+	        	<br/>
+	        	<strong>Cache dir size</strong>: <?php $size=round(gltr_get_cache_size()/1024,1); echo ($size);?> KB<br/>
+	        	<strong>Stale dir size</strong>: <?php $size=round(gltr_get_stale_size()/1024,1); echo ($size);?> KB
         </label>
       </td></tr>
   		<tr><td>
         <label>
-        <input type="submit" name="gltr_erase_cache" value="<?php _e('Erase cache') ?> &raquo;" />        
+        
+        <input type="submit"  name="gltr_erase_cache" value="<?php _e('Erase cache') ?> &raquo;" />        
         </label>
       </td></tr>
       </table>
     </fieldset>
 
   	<fieldset class="options">
-  		<h3><?php _e('Translation engines ban prevention') ?></h3>
+  		<h3><?php _e('Bad spiders blocking system') ?></h3>
   		<table width="100%" cellpadding="5" class="editform">
   		<tr><td>
-        <label><?php _e('Enable translation engines ban prevention') ?>
+        <label><?php _e('Block "bad" web spiders and crawlers') ?>
 	        	<input name="gltr_ban_prevention" type="checkbox" id="gltr_ban_prevention"  
 	        	<?php if($gltr_ban_prevention == TRUE) {?> checked="checked" <?php } ?> /><br />	        	<br />
-	        	By enabling this option, Global Translator will make visible the translation links to the spiders and search engines only on the following types of pages:
-	        	<ul>
-	        	<li>Home pages</li>
-	        	<li>Single post pages</li>
-	        	<li>Single pages</li>
-	        	</ul> 
-	        This function and the <strong>Caching Support</strong> could be useful in order to prevent from banning by the translation services due to an high number of translation requests and could also prevent content duplication issues.
+	        	By enabling this option, Global Translator will block the access to the translated pages to a lot of "bad" web spiders.
+ 	          This function could help the <strong>built-in cache</strong> to prevent "unuseful" translation requests.
         </label>
       </td></tr>
       </table>
