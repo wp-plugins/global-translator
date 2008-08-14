@@ -68,6 +68,7 @@ Change Log
 - Improved cleaning system for translated pages
 - New fast, smart, optimized, self-cleaning and built-in caching system. Drastically reduction of temporarily ban risk
 - Added Widget Title
+- Added 404 error page for deactivated translations
 
 0.9.1.1
 - Bug fix: Google translation issue
@@ -394,7 +395,7 @@ function gltr_clean_translated_page($buf, $lang) {
   $buf = urldecode($buf);
 
   $buf = preg_replace("/<meta name=([\"|']{1})description([\"|']{1})[^>]*>/i", "", $buf);
-
+	//TODO: add <meta name="language" content="LANG" />
   if (REWRITEON) {
   	//$pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
     $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
@@ -800,28 +801,45 @@ function gltr_insert_my_rewrite_query_vars($vars) {
 
 function gltr_insert_my_rewrite_parse_query($query) {
   global $gltr_result;
-	
+
+  		
 	if (gltr_not_translable_uri()){
   		return;
 	}
   
   if (isset($query->query_vars['lang'])) {
   	
+  	$chosen_langs = get_option('gltr_preferred_languages');
+
+		$can_translate = true;
+  	if (!in_array($query->query_vars['lang'], $chosen_langs)){
+  		gltr_debug("Blocking request for not chosed language:".$query->query_vars['lang']);
+  		header("HTTP/1.1 404 Not Found");
+			header("Status: 404 Not Found");
+  		$can_translate = false;
+  		$gltr_result = "404 Not Found";
+  	}
+	  
 	  if (!gltr_is_user_agent_allowed() && BAN_PREVENTION){
   		gltr_debug("Limiting bot/crawler access to resource:".$query->query_vars['url']);
-  		header('HTTP/1.x 404 Not Found'); 
-  		die();
-  	}else {
-     	$lang = $query->query_vars['lang'];
-     	$url = $query->query_vars['url'];
-     	if (empty($url)) {
-       	$url = '';
-      }
-  		
-      $gltr_result = gltr_get_page_content($lang, $url);
-  
-      ob_start('gltr_filter_content');
-    }
+  		header("HTTP/1.1 404 Not Found");
+			header("Status: 404 Not Found");
+  		$can_translate = false;
+  		$gltr_result = "404 Not Found";
+  	}
+  	
+  	if ($can_translate) {
+	   	$lang = $query->query_vars['lang'];
+	   	$url = $query->query_vars['url'];
+	   	if (empty($url)) {
+	     	$url = '';
+	    }
+			
+	    $gltr_result = gltr_get_page_content($lang, $url);
+		}
+		
+    ob_start('gltr_filter_content');
+    
   }
 }
 
