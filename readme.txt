@@ -5,7 +5,7 @@ Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.0
 Tested up to: 2.6
-Stable Tag: 0.9.1.1
+Stable Tag: 1.0
 
 Automatically translates your blog in fourteen different languages!
 
@@ -21,9 +21,10 @@ Main features:
 * Search Engine Optimized: it uses the permalinks by adding the language code at the beginning of all your URI. 
 	For example the english version on www.domain.com/mycategory/mypost will be automatically transformed in 
 	www.domain.com/en/mycategory/mypost 
-*	Fast Caching System: a built-in cache is provided in order to reduce the online connections to the translation engines 
+* Fast Caching System: new fast, smart, optimized, self-cleaning and built-in caching system. Drastically reduction of the risk of temporarily ban from translation engines. 
 * Fully configurable layout: you can easily customize the appearance of the translation bar by choosing between a TABLE 
 	or DIV layout for the flags bar and by selecting the number of translations to make available to your visitors 
+* No database modifications: Global Translator is not intrusive. It doesn't create or alter any table on your database: this feature permits to obtain better performances.
 
 For the latest information and changelog visit the website
 
@@ -53,7 +54,7 @@ for your language will appear on your blog.
 == Frequently Asked Questions ==
 
 
-= Page Not Found (404) when clicking on a translation flag =
+= White page or Page Not Found (404) when clicking on a translation flag =
 
 This is often due to a conflict with another plugin or to a custom .htaccess file which doesn't permit Global Translator 
 to add its custom permalink rules. In order to identify the problem, try to deactivate all the other existing plugins and 
@@ -62,12 +63,14 @@ plugin please send me an email (davide at nothing2hide.net).
 
 = "Sorry, the translation engine is temporarily not available. Please try again later" message when using Google Translations engine =
 
-If Google receives too many translation requests for a single IP address (it usually happens when your site is crawled by 
-spiders or bots which perform massive requests), it sometimes decides to temporarily block requests from your IP.
-At now you have three different options:
-	1. make sure to enable caching and ban prevention from the Global Translator options page
-	2. try another translation engine (i.e. Promt translation engine)
-	3. block bots access to your translated URL paths (/en/*, /fr/*, ...) on your robots.txt file
+You're using an old version of the plugin. Please upgrade to 1.0 or later.
+
+= "This page has not been translated yet. The translation process could take a while: please come back later." message when trying to access a translated page =
+
+In order to prevent from banning by the translation services, only a translation request every 4 minutes will be allowed. This will permit to fully translate
+your blog whithout any interruption; this message will completely disappear when all the pages of your blog will be cached.
+Remember that this message will also appear if you're currently being banned by the translation engine: this could happen if for example your blog shares the
+same ip address with other blogs using older versions of Global Translator.
 
 = The translated page has a bad/broken layout =
 
@@ -83,3 +86,12 @@ the files in wp-content/plugins/global-translator/ and re-upload them fresh.
 
 Everytime the permalinks structure of your blog changes, the custom rules previously added by Global Translator are overriden.
 To solve the problem you must just refresh the Global Translator Options ("Update Options" button) on the administrative area.
+
+= I've removed one or more available translations but the search engines continue to try to index the corresponding urls =
+
+When you remove one or more translations, the plugin will begin to return a 404 Not Found for all the corresponding translated pages.
+In order to notify a search engine that one or more urls are not available anymore you should add a deny rule on your robots.txt file.
+For example if you decide to remove the German translation you should modify your robots.txt as follows:
+User-agent: *
+[....]
+Disallow: /de/*
