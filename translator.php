@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0
+Version: 1.0.1
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -64,6 +64,9 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+1.0.1
+- Fixed tags issue with older Wordpress versions (2.3.*)
+
 1.0
 - Improved cleaning system for translated pages
 - New fast, smart, optimized, self-cleaning and built-in caching system. Drastically reduction of temporarily ban risk
@@ -1012,20 +1015,24 @@ function gltr_erase_common_cache_files($post_ID) {
     	if(	$item != '.' && $item != '..'){
     		gltr_delete_empty_cached_file($item);
 	    	if (REWRITEON) {
-					foreach($categories as $category) { 
-				    $pattern = '_category_' . strtolower($category->cat_name); 
-				    if(strstr($item, $pattern)){
-	        		//gltr_delete_cached_file($item);
-	        		gltr_move_cached_file_to_stale($item);
-				    }
-					} 
-					foreach($tags as $tag) { 
-				    //$pattern = '_tag_' . strtolower($tag->name); 
-				    $pattern = '_tag_' . $tag->slug; 
-				    if(strstr($item, $pattern)){
-	        		//gltr_delete_cached_file($item);
-	        		gltr_move_cached_file_to_stale($item);
-				    }
+					if (isset($categories) && is_array($categories)){
+						foreach($categories as $category) { 
+					    $pattern = '_category_' . strtolower($category->cat_name); 
+					    if(strstr($item, $pattern)){
+		        		//gltr_delete_cached_file($item);
+		        		gltr_move_cached_file_to_stale($item);
+					    }
+						} 
+					}
+					if (isset($tags) && is_array($tags)){
+						foreach($tags as $tag) { 
+					    //$pattern = '_tag_' . strtolower($tag->name); 
+					    $pattern = '_tag_' . $tag->slug; 
+					    if(strstr($item, $pattern)){
+		        		//gltr_delete_cached_file($item);
+		        		gltr_move_cached_file_to_stale($item);
+					    }
+						}
 					}
 	        if(	preg_match('/_(' . LANGS_PATTERN . ')_[0-9]{4}_[0-9]{2}/', $item) ||
 							preg_match('/_(' . LANGS_PATTERN . ')_page_[0-9]+$/', $item) ||
