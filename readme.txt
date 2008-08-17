@@ -97,3 +97,7 @@ For example if you decide to remove the German translation you should modify you
 User-agent: *
 [....]
 Disallow: /de/*
+
+= How can I discover if my blog is currently banned by the translation engine? =
+
+Go to the Global Translator admin page. If your blog has been temporarily banned, a warning message will appear inside the "Translation engine connection" section.
