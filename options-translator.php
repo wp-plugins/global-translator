@@ -1,6 +1,18 @@
 <?php
 require_once (dirname(__file__).'/header.php');
 
+function gltr_is_currently_banned(){
+	$datafile = dirname(__file__) . '/checkfile.dat';
+	$res = true;
+	if (is_file($datafile)){
+      $handle = fopen($datafile, "rb");
+      $res = unserialize(fread($handle, filesize($datafile)));
+      fclose($handle);
+	}
+	return !$res;
+}
+
+
 function gltr_get_dir_size($dir){
 	$cachesize = 0;
   if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
@@ -25,6 +37,19 @@ function gltr_get_stale_size(){
 	return gltr_get_dir_size($cachedir);
 }
 
+function gltr_get_last_cached_file_time(){
+	$res = -1;
+	$datafile = dirname(__file__) . '/lockfile.dat';
+	if (is_file($datafile)){
+      $handle = fopen($datafile, "rb");
+      $last_connection_time = unserialize(fread($handle, filesize($datafile)));
+      $now = time();
+      $res = $now - $last_connection_time;
+      fclose($handle);
+	} 
+	return $res;
+}
+
 load_plugin_textdomain('gltr'); // NLS
 
 /*Lets add some default options if they don't exist*/
@@ -34,7 +59,8 @@ add_option('gltr_html_bar_tag', 'TABLE');
 add_option('gltr_my_translation_engine', 'google');
 add_option('gltr_preferred_languages', array());
 add_option('gltr_ban_prevention', true);
-
+add_option('gltr_enable_debug', false);
+add_option('gltr_conn_interval',240);
 	
 	
 $location = get_option('siteurl') . '/wp-admin/admin.php?page=global-translator/options-translator.php'; // Form Action URI
@@ -49,11 +75,17 @@ if (isset($_POST['stage'])){
 	$gltr_col_num 							= $_POST['gltr_col_num'];
 	$gltr_html_bar_tag 					= $_POST['gltr_html_bar_tag'];
 	$gltr_my_translation_engine = $_POST['gltr_my_translation_engine'];
+	$gltr_conn_interval 				= $_POST['gltr_conn_interval'];
 	
 
 	if (isset($_POST['gltr_preferred_languages']))
 		$gltr_preferred_languages = $_POST['gltr_preferred_languages'];
 	
+	if(isset($_POST['gltr_enable_debug'])) 
+		$gltr_enable_debug = true; 
+	else 
+		$gltr_enable_debug = false;
+
 	if(isset($_POST['gltr_ban_prevention'])) 
 		$gltr_ban_prevention = true; 
 	else 
@@ -94,19 +126,28 @@ if (isset($_POST['stage'])){
 	    }
 	    
 	    if(!$iserror) {
-	      if ($timeout == "") $timeout = "10800";
 	      update_option('gltr_base_lang', $_POST['gltr_base_lang']);
 	      update_option('gltr_col_num', $_POST['gltr_col_num']);
 	      update_option('gltr_html_bar_tag', $_POST['gltr_html_bar_tag']);
 	      update_option('gltr_my_translation_engine', $_POST['gltr_my_translation_engine']);
 	      update_option('gltr_preferred_languages', array());
 	      update_option('gltr_preferred_languages', $_POST['gltr_preferred_languages']);
-	
+	      
+	      $conn_int = $_POST['gltr_conn_interval'];
+	      if (!is_numeric($conn_int))$conn_int = 240;
+	      update_option('gltr_conn_interval', $conn_int);
+				$gltr_conn_interval = $conn_int;
 	
 	      if(isset($_POST['gltr_ban_prevention']))
 	        update_option('gltr_ban_prevention', true);
 	      else
 	        update_option('gltr_ban_prevention', false);
+	
+	      if(isset($_POST['gltr_enable_debug']))
+	        update_option('gltr_enable_debug', true);
+	      else
+	        update_option('gltr_enable_debug', false);
+	
 	
 				$wp_rewrite->flush_rules();
 	      $message = "Options saved.";
@@ -121,6 +162,8 @@ if (isset($_POST['stage'])){
 	$gltr_my_translation_engine = get_option('gltr_my_translation_engine');
 	$gltr_preferred_languages = get_option('gltr_preferred_languages');
 	$gltr_ban_prevention = get_option('gltr_ban_prevention');
+	$gltr_enable_debug = get_option('gltr_enable_debug');
+	$gltr_conn_interval = get_option('gltr_conn_interval');
 
 
 	$gltr_current_engine = $gltr_available_engines[$gltr_my_translation_engine];
@@ -260,6 +303,11 @@ function calculateAvailableTranslations(lang, selectedItem) {
 <?php
 }
 
+if (gltr_is_currently_banned()){
+	$message="<font color='red'>WARNING! Your blog seems to have been temporarily banned by the translation engine. Try to increase the connection request interval on the \"Translation engine connection\" section.</font>";
+}
+
+
 //Print out the message to the user, if any
 if($message!="") { ?>
 	
@@ -372,18 +420,59 @@ if($message!="") { ?>
         <label>
 	        	Global Translator uses a fast, smart, optimized, self-cleaning and built-in caching system in order to drastically reduce the connections to the translation engines.
 						This feature cannot be optional and is needed in order to prevent from banning by the translation services. For the same reason the translation process will not be 
-						immediate and the full translation of the blog could take a while: this is because only a translation request every 4 minutes will be allowed. 
+						immediate and the full translation of the blog could take a while: this is because by default only a translation request every 4 minutes will be allowed (see next section). 
 	        	<br /> 
 	        	The cache invalidation will be automatically (and smartly) handled when a post is created, deleted or updated.
 	        	<br/>
 	        	<strong>Cache dir size</strong>: <?php $size=round(gltr_get_cache_size()/1024,1); echo ($size);?> KB<br/>
-	        	<strong>Stale dir size</strong>: <?php $size=round(gltr_get_stale_size()/1024,1); echo ($size);?> KB
+	        	<strong>Stale dir size</strong>: <?php $size=round(gltr_get_stale_size()/1024,1); echo ($size);?> KB<br/>
+	        	
         </label>
       </td></tr>
   		<tr><td>
         <label>
         
         <input type="submit"  name="gltr_erase_cache" value="<?php _e('Erase cache') ?> &raquo;" />        
+        </label>
+      </td></tr>
+      </table>
+    </fieldset>
+
+  	<fieldset class="options">
+  		<h3><?php _e('Translation engine connection') ?></h3>
+  		<table width="100%" cellpadding="5" class="editform">
+  		<tr><td>
+        <label><?php _e('Allow only a translation request every ') ?>
+	        	<input size="4"  maxlength="5" name="gltr_conn_interval" type="text" id="gltr_conn_interval" value="<?php echo($gltr_conn_interval);?>"/> seconds.<br /><br />
+	        	This feature represents the final solution which can definitively prevent your blog from being banned by the translation engines.<br />
+	        	For this reason we strongly discourage you to insert an interval value lower than "240" (4 minutes), which should represent an optimal value.<br />
+	        	If your blog is sharing its IP address with other blogs using this plugin, the risk of being banned could come back again: in this case I suggest you to  
+	        	increase the timeout value and wait for a while (some days could be necessary).<br /><br />
+						<?php
+	        	$diff_time = gltr_get_last_cached_file_time();
+						if ($diff_time > 0){
+		        	echo ("<strong>Latest allowed connection to the translation engine: ");
+	    	      if ($diff_time < 60){
+				      	echo (round(($diff_time)) . " seconds ago");
+	      			}else if ($diff_time > 60*60){
+	      				echo (round(($diff_time)/3600) . " hours ago");
+								    
+		      		}else{
+		      			echo (round(($diff_time)/60) . " minutes ago");
+		      		}
+						}
+						echo ("</strong>");
+						
+						echo ("<br /><strong>Translations status: ");						
+						if (gltr_is_currently_banned()){
+							echo("<font color='red'>Currently banned by the translation engine!</font>");
+						} else {
+							echo("<font color='green'>Working properly</font>");
+						}
+						echo ("</strong>");
+	        	?>
+	        	
+	        	
         </label>
       </td></tr>
       </table>
@@ -398,6 +487,20 @@ if($message!="") { ?>
 	        	<?php if($gltr_ban_prevention == TRUE) {?> checked="checked" <?php } ?> /><br />	        	<br />
 	        	By enabling this option, Global Translator will block the access to the translated pages to a lot of "bad" web spiders.
  	          This function could help the <strong>built-in cache</strong> to prevent "unuseful" translation requests.
+        </label>
+      </td></tr>
+      </table>
+    </fieldset>
+
+  	<fieldset class="options">
+  		<h3><?php _e('Debug') ?></h3>
+  		<table width="100%" cellpadding="5" class="editform">
+  		<tr><td>
+        <label><?php _e('Enable debug') ?>
+	        	<input name="gltr_enable_debug" type="checkbox" id="gltr_enable_debug"  
+	        	<?php if($gltr_enable_debug == TRUE) {?> checked="checked" <?php } ?> /><br />	        	<br />
+	        	By enabling this option, Global Translator will trace all its activities on the <strong>"debug.log"</strong> file, which will be saved in the following directory:<br/>
+	        	<strong><?php echo(dirname(__file__));?></strong>.<br />
         </label>
       </td></tr>
       </table>
