@@ -5,7 +5,7 @@ Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.0
 Tested up to: 2.6
-Stable Tag: 1.0.1
+Stable Tag: 1.0.2
 
 Automatically translates your blog in fourteen different languages!
 
@@ -56,10 +56,11 @@ for your language will appear on your blog.
 
 = White page or Page Not Found (404) when clicking on a translation flag =
 
-This is often due to a conflict with another plugin or to a custom .htaccess file which doesn't permit Global Translator 
-to add its custom permalink rules. In order to identify the problem, try to deactivate all the other existing plugins and 
-if nothing change check your .htaccess file and comment out all the non-standard rewrite rules. If you discover a conflicting 
-plugin please send me an email (davide at nothing2hide.net).
+This could be due to a change of the permalinks structure of your blog, to a conflict with another plugin or to a custom 
+.htaccess file which doesn't permit Global Translator to add its custom permalink rules. Try to refresh the Global Translator 
+rewrite rules just pressing the "Update Options" button from the Global Translator admin page. If the problem persists, 
+try also to deactivate all the other existing plugins and check your .htaccess file and comment out all the non-standard rewrite rules. 
+If you discover a conflicting plugin please send me an email (davide at nothing2hide.net).
 
 = "Sorry, the translation engine is temporarily not available. Please try again later" message when using Google Translations engine =
 
@@ -80,7 +81,8 @@ I suggest you to try all the translation engines in order to choose the best one
 = How do I upgrade Global Translator? =
 
 In general this just requires that you replace the existing files with the new ones. Sometimes its a good idea to delete all 
-the files in wp-content/plugins/global-translator/ and re-upload them fresh.
+the files in wp-content/plugins/global-translator/ and re-upload them fresh, but if you're upgrading from version 0.9 or later you 
+should consider to maintain the cache dir, otherwise all the already translated pages will be lost.
 
 = I've just changed my permalinks structure or just upgraded Wordpress to a newer version and Global Translator doesn't translate anymore =
 

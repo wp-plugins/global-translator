@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.1
+Version: 1.0.2
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -64,6 +64,10 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.0.2
+- Fixed cache issue with blogs not using the pemalinks
+
 1.0.1
 - Fixed tags issue with older Wordpress versions (2.3.*)
 
@@ -1012,7 +1016,7 @@ function gltr_erase_common_cache_files($post_ID) {
   if (file_exists($cachedir) && is_dir($cachedir) && is_readable($cachedir)) {
     $handle = opendir($cachedir);
     while (FALSE !== ($item = readdir($handle))) {
-    	if(	$item != '.' && $item != '..'){
+    	if( $item != '.' && $item != '..' && $item != 'stale' && !is_dir($item)){
     		gltr_delete_empty_cached_file($item);
 	    	if (REWRITEON) {
 					if (isset($categories) && is_array($categories)){
