@@ -1,15 +1,19 @@
 <?php
 require_once (dirname(__file__).'/header.php');
 
-function gltr_is_currently_banned(){
+function gltr_ban_status(){
 	$datafile = dirname(__file__) . '/checkfile.dat';
-	$res = true;
+	$res = 'unknown';
 	if (is_file($datafile)){
       $handle = fopen($datafile, "rb");
-      $res = unserialize(fread($handle, filesize($datafile)));
+      if (unserialize(fread($handle, filesize($datafile)))){
+      	$res = 'working';
+      } else {
+      	$res = 'banned';
+      }
       fclose($handle);
 	}
-	return !$res;
+	return $res;
 }
 
 
@@ -126,6 +130,11 @@ if (isset($_POST['stage'])){
 	    }
 	    
 	    if(!$iserror) {
+	    	if (get_option('gltr_my_translation_engine') != $_POST['gltr_my_translation_engine']){
+	    		$datafile = dirname(__file__) . '/checkfile.dat';
+	    		if (is_file($datafile))
+	    			unlink($datafile);
+	    	}
 	      update_option('gltr_base_lang', $_POST['gltr_base_lang']);
 	      update_option('gltr_col_num', $_POST['gltr_col_num']);
 	      update_option('gltr_html_bar_tag', $_POST['gltr_html_bar_tag']);
@@ -302,11 +311,11 @@ function calculateAvailableTranslations(lang, selectedItem) {
 </script>
 <?php
 }
-
+/*
 if (gltr_is_currently_banned()){
-	$message="<font color='red'>WARNING! Your blog seems to have been temporarily banned by the translation engine. Try to increase the connection request interval on the \"Translation engine connection\" section.</font>";
+	$message="<font color='red'>WARNING! Your blog seems to have been temporarily banned by the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine. Try to increase the connection request interval on the \"Translation engine connection\" section.</font>";
 }
-
+*/
 
 //Print out the message to the user, if any
 if($message!="") { ?>
@@ -464,10 +473,12 @@ if($message!="") { ?>
 						echo ("</strong>");
 						
 						echo ("<br /><strong>Translations status: ");						
-						if (gltr_is_currently_banned()){
-							echo("<font color='red'>Currently banned by the translation engine!</font>");
-						} else {
+						if (gltr_ban_status() == 'banned'){
+							echo("<font color='red'>Currently banned by the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine!</font>");
+						} else if (gltr_ban_status() == 'working'){
 							echo("<font color='green'>Working properly</font>");
+						} else {
+							echo("not available");
 						}
 						echo ("</strong>");
 	        	?>
