@@ -103,7 +103,7 @@ if(!class_exists("gltr_translation_engine")) {
 $googleEngine = new gltr_translation_engine(
 	'google',
 	'http://translate.google.com/translate_c?hl=en&prev=/language_tools&ie=UTF-8&oe=UTF-8&u=${URL}&langpair=${SRCLANG}|${DESTLANG}',
-	"/href=\"[^\"]*u=(.*?)&amp;prev=\/language_tools[^\"]*\"/",
+	"/href=['\"]{1}[^\"']*u=(.*?)&amp;prev=\/language_tools[^\"']*['\"]{1}/",
 	"href=\"\\1\" ",
 	array(
   'it'    => array( 'it'=>'Italiano',
@@ -761,8 +761,8 @@ $babelfishEngine = new gltr_translation_engine(
 
 $promtEngine = new gltr_translation_engine(
   'promt',
-  'http://www.online-translator.com/url/translation.aspx?autotranslate=on&sourceURL=${URL}&direction=${SRCLANG}${DESTLANG}',
-  //'http://beta.online-translator.com/url/tran_url.asp?prmtlang=en&autotranslate=on&url=${URL}&direction=${SRCLANG}${DESTLANG}',
+  'http://beta.translate.ru/url/translation.aspx?autotranslate=on&sourceURL=${URL}&direction=${SRCLANG}${DESTLANG}',
+  //old version 'http://beta.online-translator.com/url/tran_url.asp?prmtlang=en&autotranslate=on&url=${URL}&direction=${SRCLANG}${DESTLANG}',
   //old version 'http://www.online-translator.com/url/tran_url.asp?url=${URL}&direction=${SRCLANG}${DESTLANG}&cp1=UTF-8&cp2=UTF-8&autotranslate=on',
   "/href=\"(.*?)url=(.*?)\"([\s|>]{1})/i",
   "href=\"\\2\" \\3",

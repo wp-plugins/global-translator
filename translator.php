@@ -66,9 +66,11 @@ plugin "Global Translator", and click the "Deactivate" button.
 Change Log
 
 1.0.3
-- Added debug option on the admin area
+- Added Debug option on the admin area
 - Added Connection Interval option on the admin area
 - Added more detailed messages and info on the admin page
+- Updated new Promt translation url
+- Fixed some issues about cache cleaning for blogs not using the permalinks
 
 1.0.2
 - Fixed cache issue with blogs not using the pemalinks
@@ -243,6 +245,7 @@ function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
   $destLang = $gltr_engine->decode_lang_code($destLang);
   $values = array($urlToTransl, $srcLang, $destLang);
   $res = str_replace($tokens, $values, $gltr_engine->get_base_url());
+  /*
   if ($gltr_engine->get_name() == 'freetransl'){
     $tmp_buf = gltr_http_get_content("http://www.freetranslation.com/");
     $matches = array();
@@ -250,7 +253,7 @@ function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
       '/\<input type="hidden" name="username" value="([^"]*)" \/>\<input type="hidden" name="password" value="([^"]*)" \/>/',$tmp_buf,$matches);
       
     $res .= "&username=$matches[1]&password=$matches[2]";
-  }
+  }*/
   gltr_debug("Translation URL: $res");
   return $res;
 } 
@@ -277,8 +280,8 @@ function gltr_translate($lang, $url) {
       $url_to_translate = preg_replace($pattern2, '\\1', $url);
     }
   } else {
-    $url_to_translate = preg_replace('/(.*)(lang=' . LANGS_PATTERN . ')(.*)/', '\\1\\3',
-      $url);
+    $url_to_translate = preg_replace('/[\\?&]{0,1}lang\\=(' . LANGS_PATTERN . ')/i', '', $url);    
+  	//gltr_debug("==>$url|$url_to_translate");
   }
 
   $resource = gltr_build_translation_url(BASE_LANG, $lang, $url_to_translate);
@@ -293,8 +296,41 @@ function gltr_translate($lang, $url) {
   	gltr_debug("Bad translated content for url: $url");
 		return $unavail_message;
 	}
-  
+}
 
+function gltr_store_url_for_sitemap($url){
+
+	$datafile = dirname(__file__) . '/sitemapfile.dat';
+	if (!file_exists($datafile)){
+      $handle = fopen($datafile, "wb");
+	    fwrite($handle, ''); 
+      fclose($handle);
+	} 
+
+	$auth = false;
+	if (REWRITEON){
+		if (!preg_match("/\\/category\\//", $url) && 
+				!preg_match("/\\/tag\\//", $url) && 
+				!preg_match("/\\/page\\//", $url) &&
+				!preg_match("/\\/[0-9]{4}\\/[0-9]{2}[\\/]{0,1}$/", $url) 
+		){
+			$auth = true;
+		}
+	} else {
+		//no permalinks
+		if (preg_match("/p=[0-9]+/", $url)){
+			$auth = true;
+		}
+	}
+
+	if ($auth && is_file($datafile)){
+    $content = file($datafile);
+    if (!in_array("$url\n", $content)){
+      $handle = fopen($datafile, "a");
+	    fwrite($handle, "$url\n"); 
+      fclose($handle);
+    }
+	}
 }
 
 function gltr_http_get_content($resource) {
@@ -389,9 +425,10 @@ function gltr_is_connection_allowed(){
 	} 
 	
 	if (is_file($datafile)){
-      $handle = fopen($datafile, "rb");
-      $last_connection_time = unserialize(fread($handle, filesize($datafile)));
-      fclose($handle);
+      //$handle = fopen($datafile, "rb");
+      //$last_connection_time = unserialize(fread($handle, filesize($datafile)));
+      //fclose($handle);
+      $last_connection_time = unserialize(file_get_contents($datafile));
 	}
 	if ($last_connection_time > 0){
 		$now = time();
@@ -742,10 +779,14 @@ function gltr_get_page_content($lang, $url) {
   if (file_exists($filename) && filesize($filename) > 0) {
     // We are done, just return the file and exit
     gltr_debug("cache: returning cached version ($hash) for url:" . gltr_get_self_url());
-    $handle = fopen($filename, "rb");
-    $page = fread($handle, filesize($filename));
-    $page .= "<!--CACHED VERSION: $unique_url_string ($hash)-->";
-    fclose($handle);
+    
+    //$handle = fopen($filename, "rb");
+    //$page = fread($handle, filesize($filename));
+    //$page .= "<!--CACHED VERSION: $unique_url_string ($hash)-->";
+    //fclose($handle);
+    
+    $page = file_get_contents($filename);
+    $page .= "<!--CACHED VERSION ($hash)-->";
     
     $page = gltr_insert_flag_bar($page);
     
@@ -784,14 +825,21 @@ function gltr_get_page_content($lang, $url) {
     	//translation not available. Switching to stale
 	    if (file_exists($stale_filename) && filesize($stale_filename) > 0) {
 	      gltr_debug("cache: returning stale version ($hash) for url:" . gltr_get_self_url());
-	      $handle = fopen($stale_filename, "rb");
-	      $page = fread($handle, filesize($stale_filename));
-	      $page .= "<!--STALE VERSION: $unique_url_string ($hash)-->";
-	      fclose($handle);
+	      //$handle = fopen($stale_filename, "rb");
+	      //$page = fread($handle, filesize($stale_filename));
+	      //$page .= "<!--STALE VERSION: $unique_url_string ($hash)-->";
+	      //fclose($handle);
+	      $page = file_get_contents($stale_filename);
+	      $page .= "<!--STALE VERSION: ($hash)-->";
 	 			$from_cache = true;
 	    }
     }
   }
+  
+	if (gltr_is_valid_translated_content($page)){
+  	gltr_store_url_for_sitemap(gltr_get_self_url());
+	}
+  
   return $page;
 }
 
@@ -895,20 +943,7 @@ function gltr_not_translable_uri(){
   return false;
 }
 
-/*
-function gltr_is_translation_engine() {
-	$translation_engines = array(
-	"195.131.10.152",//promt
-	"209.85.136.136"
-	);
-	foreach ($translation_engines as $key => $value) {
-    if ($_SERVER['REMOTE_ADDR'] == strtoupper($value)) {
-      return true;
-    }
-  }
-  return false;
-}
-*/
+
 function gltr_is_browser() {
   $browsers_ua = array(
   "compatible; MSIE", 
@@ -1005,9 +1040,9 @@ function gltr_erase_common_cache_files($post_ID) {
 		} else {
 			gltr_debug("Post published ok to cached files erase");
 		}
+		if (function_exists('get_the_category')) $categories = get_the_category($post_ID);
+		if (function_exists('get_the_tags')) $tags = get_the_tags($post_ID);
   	if (REWRITEON) {
-  		if (function_exists('get_the_category')) $categories = get_the_category($post_ID);
-			if (function_exists('get_the_tags')) $tags = get_the_tags($post_ID);
   		$uri = substr (get_permalink($post_ID), strlen(get_option('home')) );
   		$single_post_pattern = gltr_hashReqUri($uri);
   	} else {
@@ -1029,7 +1064,6 @@ function gltr_erase_common_cache_files($post_ID) {
 						foreach($categories as $category) { 
 					    $pattern = '_category_' . strtolower($category->cat_name); 
 					    if(strstr($item, $pattern)){
-		        		//gltr_delete_cached_file($item);
 		        		gltr_move_cached_file_to_stale($item);
 					    }
 						} 
@@ -1039,7 +1073,6 @@ function gltr_erase_common_cache_files($post_ID) {
 					    //$pattern = '_tag_' . strtolower($tag->name); 
 					    $pattern = '_tag_' . $tag->slug; 
 					    if(strstr($item, $pattern)){
-		        		//gltr_delete_cached_file($item);
 		        		gltr_move_cached_file_to_stale($item);
 					    }
 						}
@@ -1047,16 +1080,32 @@ function gltr_erase_common_cache_files($post_ID) {
 	        if(	preg_match('/_(' . LANGS_PATTERN . ')_[0-9]{4}_[0-9]{2}/', $item) ||
 							preg_match('/_(' . LANGS_PATTERN . ')_page_[0-9]+$/', $item) ||
 							preg_match('/_(' . LANGS_PATTERN . ')$/', $item) ||
-							preg_match('/_(' . LANGS_PATTERN . ')'.$single_post_pattern.'$/', $item) 
-	        	) {
-	        		//gltr_delete_cached_file($item);
+							preg_match('/_(' . LANGS_PATTERN . ')'.$single_post_pattern.'$/', $item)) {
 	        		gltr_move_cached_file_to_stale($item);
 	        }
 	      } else {
-	        if(	!preg_match('/_p=[0-9]+/', $item) || 
-	        		preg_match('/_p='.$single_post_pattern.'/', $item)
-	        	) {
-	        		//gltr_delete_cached_file($item);
+	      	//no rewrite rules
+					if (isset($categories) && is_array($categories)){
+						foreach($categories as $category) { 
+					    $pattern = '_cat=' . strtolower($category->cat_ID); 
+					    if(strstr($item, $pattern)){
+		        		gltr_move_cached_file_to_stale($item);
+					    }
+						} 
+					}
+					if (isset($tags) && is_array($tags)){
+						foreach($tags as $tag) { 
+					    $pattern = '_tag=' . $tag->slug; 
+					    if(strstr($item, $pattern)){
+		        		gltr_move_cached_file_to_stale($item);
+					    }
+						}
+					}
+	        if(	preg_match('/_p='.$single_post_pattern.'$/', $item) ||
+	        		preg_match('/_paged=[0-9]+$/', $item) ||
+	        		preg_match('/_m=[0-9]{6}$/', $item) ||
+	        		preg_match('/_lang=(' . LANGS_PATTERN . ')$/', $item)
+	        ) {
 	        		gltr_move_cached_file_to_stale($item);
 	        }
 	      }

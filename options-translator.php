@@ -5,13 +5,11 @@ function gltr_ban_status(){
 	$datafile = dirname(__file__) . '/checkfile.dat';
 	$res = 'unknown';
 	if (is_file($datafile)){
-      $handle = fopen($datafile, "rb");
-      if (unserialize(fread($handle, filesize($datafile)))){
+      if (unserialize(file_get_contents($datafile))){
       	$res = 'working';
       } else {
       	$res = 'banned';
       }
-      fclose($handle);
 	}
 	return $res;
 }
@@ -474,7 +472,7 @@ if($message!="") { ?>
 						
 						echo ("<br /><strong>Translations status: ");						
 						if (gltr_ban_status() == 'banned'){
-							echo("<font color='red'>Currently banned by the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine!</font>");
+							echo("<font color='red'>Bad response from the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine: your blog could have been temporarily banned</font>");
 						} else if (gltr_ban_status() == 'working'){
 							echo("<font color='green'>Working properly</font>");
 						} else {
