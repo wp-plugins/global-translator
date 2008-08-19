@@ -71,6 +71,7 @@ Change Log
 - Added more detailed messages and info on the admin page
 - Updated new Promt translation url
 - Fixed some issues about cache cleaning for blogs not using the permalinks
+- Added experimental sitemap integration
 
 1.0.2
 - Fixed cache issue with blogs not using the pemalinks
@@ -241,15 +242,35 @@ function gltr_translator_init() {
 }
 
 function gltr_add_translated_pages_to_sitemap() {
+  global $wpdb;
 	if (gltr_sitemap_plugin_detected()){
 		$generatorObject = &GoogleSitemapGenerator::GetInstance();
-		$datafile = dirname(__file__) . '/sitemapfile.dat';
-		if (is_file($datafile)){
-	    $content = file($datafile);
-	    foreach($content as $key => $value){
-	    	$value = BLOG_HOME . $value;
-			 	$generatorObject->AddUrl($value,time(),"weekly",0.1);
-	    }
+	  $posts = $wpdb->get_results("SELECT * FROM $wpdb->posts WHERE post_status = 'publish' AND post_password='' ORDER BY post_modified DESC");
+  	$chosen_langs = get_option('gltr_preferred_languages');
+  	
+  	//homepages
+		foreach($chosen_langs as $lang){
+			$trans_link = "";
+			if (REWRITEON){
+				$trans_link = preg_replace("/".BLOG_HOME_ESCAPED."/", BLOG_HOME . "/$lang/" , BLOG_HOME );
+			} else {
+				$trans_link = BLOG_HOME . "?lang=$lang";
+			}
+			$generatorObject->AddUrl($trans_link,time(),"daily",1);
+		}
+		
+		//posts
+		foreach ($posts as $post) {
+			$permalink = get_permalink($post->ID);
+			foreach($chosen_langs as $lang){
+				$trans_link = "";
+				if (REWRITEON){
+					$trans_link = preg_replace("/".BLOG_HOME_ESCAPED."/", BLOG_HOME . "/" . $lang, $permalink );
+				} else {
+					$trans_link = $permalink . "&lang=$lang";
+				}
+				$generatorObject->AddUrl($trans_link,time(),"weekly",0.2);
+			}
 		}
 	}
 }
@@ -311,45 +332,6 @@ function gltr_translate($lang, $url) {
   	gltr_store_translation_engine_status(false);
   	gltr_debug("Bad translated content for url: $url");
 		return $unavail_message;
-	}
-}
-
-function gltr_store_url_for_sitemap($url){
-
-	$datafile = dirname(__file__) . '/sitemapfile.dat';
-	if (!file_exists($datafile)){
-    if (!gltr_create_file($datafile)){
-			die("Unable to create '$datafile' file. Please check the global-translator directory permissions.");	
-    }
-	} 
-	if (!is_readable($datafile) || !is_writeable($datafile)){
-		die("Can't open '$datafile' file. Please try to manually create it and make it readable and writable.");	
-	}
-	
-	$auth = false;
-	if (REWRITEON){
-		if (!preg_match("/\\/category\\//", $url) && 
-				!preg_match("/\\/tag\\//", $url) && 
-				!preg_match("/\\/page\\//", $url) &&
-				!preg_match("/\\/[0-9]{4}\\/[0-9]{2}[\\/]{0,1}$/", $url) &&
-				!preg_match("/=/", $url)
-		){
-			$auth = true;
-		}
-	} else {
-		//no permalinks
-		if (preg_match("/p=[0-9]+/", $url)){
-			$auth = true;
-		}
-	}
-
-	if ($auth && is_file($datafile)){
-    $content = file($datafile);
-    if (!in_array("$url\n", $content)){
-      $handle = fopen($datafile, "a");
-	    fwrite($handle, "$url\n"); 
-      fclose($handle);
-    }
 	}
 }
 
@@ -866,10 +848,6 @@ function gltr_get_page_content($lang, $url) {
 	    }
     }
   }
-  
-	if (gltr_is_valid_translated_content($page) && SITEMAP_INTEGRATION){
-  	gltr_store_url_for_sitemap($_SERVER['REQUEST_URI']);
-	}
   
   return $page;
 }
