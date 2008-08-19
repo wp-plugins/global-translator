@@ -535,7 +535,7 @@ if($message!="") { ?>
       </td></tr>
       </table>   
     </fieldset>
-
+<!--
   	<fieldset class="options">
   		<h3><?php _e('Sitemap integration (beta)') ?></h3>
   		<table width="100%" cellpadding="5" class="editform">
@@ -558,6 +558,7 @@ if($message!="") { ?>
       </td></tr>
       </table>
     </fieldset>
+    -->
   	<fieldset class="options">
   		<h3><?php _e('Debug') ?></h3>
   		<table width="100%" cellpadding="5" class="editform">
