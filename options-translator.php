@@ -63,6 +63,7 @@ add_option('gltr_preferred_languages', array());
 add_option('gltr_ban_prevention', true);
 add_option('gltr_enable_debug', false);
 add_option('gltr_conn_interval',240);
+add_option('gltr_sitemap_integration',false);
 	
 	
 $location = get_option('siteurl') . '/wp-admin/admin.php?page=global-translator/options-translator.php'; // Form Action URI
@@ -93,6 +94,11 @@ if (isset($_POST['stage'])){
 	else 
 		$gltr_ban_prevention = false;
 	
+	if(isset($_POST['gltr_sitemap_integration'])) 
+		$gltr_sitemap_integration = true; 
+	else 
+		$gltr_sitemap_integration = false;
+	
 	
 	if ('change' == $_POST['stage']) {
 		//recalculate some things
@@ -105,7 +111,7 @@ if (isset($_POST['stage'])){
 	    if (file_exists($cachedir) && is_dir($cachedir) && is_readable($cachedir)) {
 	      $handle = opendir($cachedir);
 	      while (FALSE !== ($item = readdir($handle))) {
-	        if($item != '.' && $item != '..') {
+	        if($item != '.' && $item != '..' && !is_dir($item)) {
 	          $path = $cachedir.'/'.$item;
 	          if (file_exists($path) && is_file($path))
 	          	unlink($path);
@@ -149,6 +155,13 @@ if (isset($_POST['stage'])){
 	        update_option('gltr_ban_prevention', true);
 	      else
 	        update_option('gltr_ban_prevention', false);
+
+	      if(isset($_POST['gltr_sitemap_integration']))
+	        update_option('gltr_sitemap_integration', true);
+	      else
+	        update_option('gltr_sitemap_integration', false);
+
+	
 	
 	      if(isset($_POST['gltr_enable_debug']))
 	        update_option('gltr_enable_debug', true);
@@ -169,6 +182,8 @@ if (isset($_POST['stage'])){
 	$gltr_my_translation_engine = get_option('gltr_my_translation_engine');
 	$gltr_preferred_languages = get_option('gltr_preferred_languages');
 	$gltr_ban_prevention = get_option('gltr_ban_prevention');
+	$gltr_sitemap_integration = get_option('gltr_sitemap_integration');
+	
 	$gltr_enable_debug = get_option('gltr_enable_debug');
 	$gltr_conn_interval = get_option('gltr_conn_interval');
 
@@ -209,6 +224,26 @@ if (isset($_POST['stage'])){
 	    $message = "Unable to complete Global Translator initialization. Plese chmod 777 the following directory:
 	    <ul><li>".$staledir."</li></ul>";
 	  } 
+  }
+  
+  //check files
+  $datafiles = array();
+  $datafiles[] = dirname(__file__) . '/checkfile.dat';
+  $datafiles[] = dirname(__file__) . '/lockfile.dat';
+  foreach($datafiles as $datafile){
+  	if(!is_file($datafile)){
+	    if (!gltr_create_file($datafile)){
+				$message = "Unable to complete Global Translator initialization. Please check the 'global-translator' directory permissions: unable to create the following file:
+		    <ul><li>".$datafile."</li></ul>";  		
+		    break;
+	    }
+  	} 
+  	
+  	if (!is_readable($datafile) || !is_writeable($datafile)){
+			$message = "Unable to complete Global Translator initialization. Plese create and make readable and writeable the following file:
+	    <ul><li>".$datafile."</li></ul>";  		
+	    break;
+  	}
   }
 }
 
@@ -498,9 +533,31 @@ if($message!="") { ?>
  	          This function could help the <strong>built-in cache</strong> to prevent "unuseful" translation requests.
         </label>
       </td></tr>
-      </table>
+      </table>   
     </fieldset>
 
+  	<fieldset class="options">
+  		<h3><?php _e('Sitemap integration (beta)') ?></h3>
+  		<table width="100%" cellpadding="5" class="editform">
+  		<tr><td>
+  			<?php 
+  			if (gltr_sitemap_plugin_detected()){?>
+        <label>
+						<?php _e('Enable sitemap integration') ?>
+	        	<input name="gltr_sitemap_integration" type="checkbox" id="gltr_sitemap_integration"  
+	        	<?php if($gltr_sitemap_integration == TRUE) {?> checked="checked" <?php } ?> /><br />	        	<br />
+	        	By enabling this option, Global Translator will automatically provide the translated url to the installed plugin "<strong>Google XML Sitemaps Generator for WordPress</strong>".
+        </label>
+      <?php
+      } else {?>
+        <label>"Google XML Sitemaps Generator for WordPress" not detected.<br />
+        	Please download and install the "<a target="_blank" href="http://www.arnebrachhold.de/projects/wordpress-plugins/google-xml-sitemaps-generator/">Google XML Sitemaps Generator for WordPress 3.*</a>" in order to enable this feature.
+        </label>
+      <?php
+      }?>
+      </td></tr>
+      </table>
+    </fieldset>
   	<fieldset class="options">
   		<h3><?php _e('Debug') ?></h3>
   		<table width="100%" cellpadding="5" class="editform">

@@ -198,6 +198,7 @@ define('BAR_COLUMNS', get_option('gltr_col_num'));
 define('BAN_PREVENTION', get_option('gltr_ban_prevention'));
 define('HTML_BAR_TAG', get_option('gltr_html_bar_tag'));
 define('TRANSLATION_ENGINE', get_option('gltr_my_translation_engine'));
+define('SITEMAP_INTEGRATION', get_option('gltr_sitemap_integration'));
 define('BLOG_URL', get_settings('siteurl'));
 define('BLOG_HOME', get_settings('home'));
 define('BLOG_HOME_ESCAPED', str_replace('/', '\\/', BLOG_HOME));
@@ -222,6 +223,7 @@ add_action('comment_post', 'gltr_erase_common_cache_files');
 //add_action('delete_comment', 'gltr_erase_common_cache_files');
 //add_action('switch_theme', 'gltr_erase_common_cache_files');
 
+if (SITEMAP_INTEGRATION) add_action("sm_buildmap","gltr_add_translated_pages_to_sitemap");
 
 function gltr_translator_init() {
   global $wp_rewrite;
@@ -236,6 +238,20 @@ function gltr_translator_init() {
   if (REWRITEON) {
     add_filter('generate_rewrite_rules', 'gltr_translations_rewrite');
   }
+}
+
+function gltr_add_translated_pages_to_sitemap() {
+	if (gltr_sitemap_plugin_detected()){
+		$generatorObject = &GoogleSitemapGenerator::GetInstance();
+		$datafile = dirname(__file__) . '/sitemapfile.dat';
+		if (is_file($datafile)){
+	    $content = file($datafile);
+	    foreach($content as $key => $value){
+	    	$value = BLOG_HOME . $value;
+			 	$generatorObject->AddUrl($value,time(),"weekly",0.1);
+	    }
+		}
+	}
 }
 
 function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
@@ -302,17 +318,21 @@ function gltr_store_url_for_sitemap($url){
 
 	$datafile = dirname(__file__) . '/sitemapfile.dat';
 	if (!file_exists($datafile)){
-      $handle = fopen($datafile, "wb");
-	    fwrite($handle, ''); 
-      fclose($handle);
+    if (!gltr_create_file($datafile)){
+			die("Unable to create '$datafile' file. Please check the global-translator directory permissions.");	
+    }
 	} 
-
+	if (!is_readable($datafile) || !is_writeable($datafile)){
+		die("Can't open '$datafile' file. Please try to manually create it and make it readable and writable.");	
+	}
+	
 	$auth = false;
 	if (REWRITEON){
 		if (!preg_match("/\\/category\\//", $url) && 
 				!preg_match("/\\/tag\\//", $url) && 
 				!preg_match("/\\/page\\//", $url) &&
-				!preg_match("/\\/[0-9]{4}\\/[0-9]{2}[\\/]{0,1}$/", $url) 
+				!preg_match("/\\/[0-9]{4}\\/[0-9]{2}[\\/]{0,1}$/", $url) &&
+				!preg_match("/=/", $url)
 		){
 			$auth = true;
 		}
@@ -408,6 +428,16 @@ function gltr_is_valid_translated_content($content){
 
 function gltr_store_translation_engine_status($status){
 	$datafile = dirname(__file__) . '/checkfile.dat';
+	if (!file_exists($datafile)){
+    if (!gltr_create_file($datafile)){
+			die("Unable to create '$datafile' file. Please check the global-translator directory permissions.");	
+    }
+
+	} 
+	if (!is_readable($datafile) || !is_writeable($datafile)){
+		die("Can't open '$datafile' file. Please try to manually create it and make it readable and writable.");	
+	}
+		
   $handle = fopen($datafile, "wb");
   fwrite($handle, serialize($status)); //write
   fclose($handle);
@@ -419,15 +449,16 @@ function gltr_is_connection_allowed(){
 	$datafile = dirname(__file__) . '/lockfile.dat';
 	$res = true;
 	if (!file_exists($datafile)){
-      $handle = fopen($datafile, "wb");
+      $handle = fopen($datafile, "wb")
+      	or die("Can't open '$datafile' file. Please try to manually create it and make it readable and writable.");
 	    fwrite($handle, serialize(time())); //write
       fclose($handle);
 	} 
+	if (!is_readable($datafile ) || !is_writeable($datafile )){
+		die("Can't open '$datafile' file. Please try to manually create it and make it readable and writable.");
+	}
 	
 	if (is_file($datafile)){
-      //$handle = fopen($datafile, "rb");
-      //$last_connection_time = unserialize(fread($handle, filesize($datafile)));
-      //fclose($handle);
       $last_connection_time = unserialize(file_get_contents($datafile));
 	}
 	if ($last_connection_time > 0){
@@ -443,7 +474,7 @@ function gltr_is_connection_allowed(){
 	    fclose($handle);
 	    $res = true;
 	  }
-	}
+	} 
 	return $res;
 }
 
@@ -836,8 +867,8 @@ function gltr_get_page_content($lang, $url) {
     }
   }
   
-	if (gltr_is_valid_translated_content($page)){
-  	gltr_store_url_for_sitemap(gltr_get_self_url());
+	if (gltr_is_valid_translated_content($page) && SITEMAP_INTEGRATION){
+  	gltr_store_url_for_sitemap($_SERVER['REQUEST_URI']);
 	}
   
   return $page;
@@ -1136,16 +1167,6 @@ function gltr_move_cached_file_to_stale($filename){
   } else {
 	  gltr_debug("Moving cached file $src to stale $dst");
   }
-	/*
-  $handle = fopen($src, "rb");
-  $buf = fread($handle, filesize($src));
-  fclose($handle);
-
-  $handle = fopen($dst, "wb");
-  fwrite($handle, $buf); //write
-  fclose($handle);
-	unlink($src);
-	*/
 }
 
 function gltr_delete_cached_file($filename){

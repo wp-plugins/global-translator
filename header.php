@@ -1,4 +1,39 @@
 <?php
+function gltr_sitemap_plugin_detected(){
+	if (class_exists('GoogleSitemapGenerator')){
+		$generatorObject = &GoogleSitemapGenerator::GetInstance();
+		return($generatorObject!=null);
+	} else {
+		return false;
+	}
+}
+
+function gltr_create_file($datafile){
+	if (!file_exists($datafile)){
+      $handle = fopen($datafile, "wb");
+	    fwrite($handle, ''); 
+      fclose($handle);
+	} 
+}
+
+if (!function_exists('file_get_contents')) {
+	function file_get_contents($filename, $incpath = false, $resource_context = null) {
+		if (false === $handle = fopen($filename, 'rb', $incpath)) {
+			return false;
+		}
+		if ($fsize = @filesize($filename)) {
+			$buf = fread($handle, $fsize);
+		} else {
+			$buf = '';
+			while (!feof($handle)) {
+				$buf .= fread($handle, 8192);
+			}
+		}
+		fclose($handle);
+		return $buf;
+	}	
+}
+
 if(!class_exists("gltr_translation_engine")) {
 	class gltr_translation_engine {
 		var $_name;
