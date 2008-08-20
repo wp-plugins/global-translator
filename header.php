@@ -9,11 +9,13 @@ function gltr_sitemap_plugin_detected(){
 }
 
 function gltr_create_file($datafile){
+	$success = true;
 	if (!file_exists($datafile)){
-      $handle = fopen($datafile, "wb");
-	    fwrite($handle, ''); 
-      fclose($handle);
+      if (($handle = @fopen($datafile, "wb")) === false) return false;
+	    if ((@fwrite($handle, '')) === false) return false;
+      @fclose($handle);
 	} 
+	return true;
 }
 
 if (!function_exists('file_get_contents')) {

@@ -4,12 +4,8 @@ require_once (dirname(__file__).'/header.php');
 function gltr_ban_status(){
 	$datafile = dirname(__file__) . '/checkfile.dat';
 	$res = 'unknown';
-	if (is_file($datafile)){
-      if (unserialize(file_get_contents($datafile))){
-      	$res = 'working';
-      } else {
-      	$res = 'banned';
-      }
+	if (is_file($datafile) && filesize($datafile) > 0){
+		$res = unserialize(file_get_contents($datafile));
 	}
 	return $res;
 }
@@ -42,7 +38,7 @@ function gltr_get_stale_size(){
 function gltr_get_last_cached_file_time(){
 	$res = -1;
 	$datafile = dirname(__file__) . '/lockfile.dat';
-	if (is_file($datafile)){
+	if (is_file($datafile) && filesize($datafile) > 0){
       $handle = fopen($datafile, "rb");
       $last_connection_time = unserialize(fread($handle, filesize($datafile)));
       $now = time();
@@ -203,48 +199,50 @@ if (isset($_POST['stage'])){
   $cachedir = dirname(__file__) . '/cache';
   
   $message = "";
-  if (!is_dir($cachedir)){
-  	if(!mkdir($cachedir, 0777)){
-      $message = "Unable to complete Global Translator initialization. Plese manually create and chmod 777 the following directory:
-      <ul><li>".$cachedir."</li></ul>";
-  	} 
-	} else if (!is_readable($cachedir) || !is_writable($cachedir) ){
-    $message = "Unable to complete Global Translator initialization. Plese chmod 777 the following directory:
-    <ul><li>".$cachedir."</li></ul>";
-  } 
   
-  if (is_dir($cachedir) && is_readable($cachedir) && is_writable($cachedir)){
-	  $staledir = dirname(__file__) . '/cache/stale';
-  	if (!is_dir($staledir)){
-	  	if(!mkdir($staledir, 0777)){
+  if (!is_readable(dirname(__file__)) || !is_writable(dirname(__file__)) ){
+    $message = "Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
+    <ul><li>".dirname(__file__)."</li></ul>";
+  } else {
+	  if (!is_dir($cachedir)){
+	  	if(!mkdir($cachedir, 0777)){
 	      $message = "Unable to complete Global Translator initialization. Plese manually create and chmod 777 the following directory:
-	      <ul><li>".$staledir."</li></ul>";
+	      <ul><li>".$cachedir."</li></ul>";
 	  	} 
-		} else if (!is_readable($staledir) || !is_writable($staledir) ){
+		} else if (!is_readable($cachedir) || !is_writable($cachedir) ){
 	    $message = "Unable to complete Global Translator initialization. Plese chmod 777 the following directory:
-	    <ul><li>".$staledir."</li></ul>";
+	    <ul><li>".$cachedir."</li></ul>";
 	  } 
-  }
-  
-  //check files
-  $datafiles = array();
-  $datafiles[] = dirname(__file__) . '/checkfile.dat';
-  $datafiles[] = dirname(__file__) . '/lockfile.dat';
-  foreach($datafiles as $datafile){
-  	if(!is_file($datafile)){
-	    if (!gltr_create_file($datafile)){
-				$message = "Unable to complete Global Translator initialization. Please check the 'global-translator' directory permissions: unable to create the following file:
-		    <ul><li>".$datafile."</li></ul>";  		
-		    break;
-	    }
-  	} 
-  	
-  	if (!is_readable($datafile) || !is_writeable($datafile)){
-			$message = "Unable to complete Global Translator initialization. Plese create and make readable and writeable the following file:
-	    <ul><li>".$datafile."</li></ul>";  		
-	    break;
-  	}
-  }
+	  
+	  if (is_dir($cachedir) && is_readable($cachedir) && is_writable($cachedir)){
+		  $staledir = dirname(__file__) . '/cache/stale';
+	  	if (!is_dir($staledir)){
+		  	if(!mkdir($staledir, 0777)){
+		      $message = "Unable to complete Global Translator initialization. Plese manually create and chmod 777 the following directory:
+		      <ul><li>".$staledir."</li></ul>";
+		  	} 
+			} else if (!is_readable($staledir) || !is_writable($staledir) ){
+		    $message = "Unable to complete Global Translator initialization. Plese chmod 777 the following directory:
+		    <ul><li>".$staledir."</li></ul>";
+		  } 
+	  }
+	  
+	  //check files
+	  $datafiles = array();
+	  $datafiles[] = dirname(__file__) . '/checkfile.dat';
+	  $datafiles[] = dirname(__file__) . '/lockfile.dat';
+	  foreach($datafiles as $datafile){
+	  	if(!is_file($datafile)){
+		    if (!gltr_create_file($datafile)){
+					$message .= "Unable to complete Global Translator initialization. Plese create and make readable and writeable the following file:
+			    <ul><li>".$datafile."</li></ul><br />";  		
+		    }
+	  	} else if (!is_readable($datafile) || !is_writeable($datafile)){
+				$message .= "Unable to complete Global Translator initialization. Plese make readable and writeable the following file:
+		    <ul><li>".$datafile."</li></ul><br />";  		
+	  	}
+	  }  
+	}  
 }
 
 //foreach($gltr_preferred_languages as $key => $value){echo "$value<br>";}
@@ -489,11 +487,12 @@ if($message!="") { ?>
 	        	This feature represents the final solution which can definitively prevent your blog from being banned by the translation engines.<br />
 	        	For this reason we strongly discourage you to insert an interval value lower than "240" (4 minutes), which should represent an optimal value.<br />
 	        	If your blog is sharing its IP address with other blogs using this plugin, the risk of being banned could come back again: in this case I suggest you to  
-	        	increase the timeout value and wait for a while (some days could be necessary).<br /><br />
+	        	increase the timeout value and wait for a while (some days could be necessary).<br />
+	        	<ul>
 						<?php
 	        	$diff_time = gltr_get_last_cached_file_time();
 						if ($diff_time > 0){
-		        	echo ("<strong>Latest allowed connection to the translation engine: ");
+		        	echo ("<li>Latest allowed connection to the translation engine: <strong>");
 	    	      if ($diff_time < 60){
 				      	echo (round(($diff_time)) . " seconds ago");
 	      			}else if ($diff_time > 60*60){
@@ -502,10 +501,12 @@ if($message!="") { ?>
 		      		}else{
 		      			echo (round(($diff_time)/60) . " minutes ago");
 		      		}
+						} else {
+							echo ("<li>Latest allowed connection to the translation engine: <strong>not available");
 						}
-						echo ("</strong>");
+						echo ("</strong></li>");
 						
-						echo ("<br /><strong>Translations status: ");						
+						echo ("<li>Translations status: <strong>");						
 						if (gltr_ban_status() == 'banned'){
 							echo("<font color='red'>Bad response from the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine: your blog could have been temporarily banned</font>");
 						} else if (gltr_ban_status() == 'working'){
@@ -513,8 +514,9 @@ if($message!="") { ?>
 						} else {
 							echo("not available");
 						}
-						echo ("</strong>");
+						echo ("</strong></li>");
 	        	?>
+	        </ul>
 	        	
 	        	
         </label>

@@ -239,6 +239,10 @@ function gltr_translator_init() {
   if (REWRITEON) {
     add_filter('generate_rewrite_rules', 'gltr_translations_rewrite');
   }
+  if (!is_readable(dirname(__file__)) || !is_writable(dirname(__file__)) ){
+    die ("Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
+    <ul><li>".dirname(__file__)."</li></ul>");  
+  }
 }
 
 function gltr_add_translated_pages_to_sitemap() {
@@ -328,10 +332,10 @@ function gltr_translate($lang, $url) {
   $buf = gltr_http_get_content($resource);
 	
 	if (gltr_is_valid_translated_content($buf)){
-  	gltr_store_translation_engine_status(true);
+  	gltr_store_translation_engine_status('working');
 		return gltr_clean_translated_page($buf, $lang);
 	} else {
-  	gltr_store_translation_engine_status(false);
+  	gltr_store_translation_engine_status('banned');
   	gltr_debug("Bad translated content for url: $url");
 		return $unavail_message;
 	}
@@ -431,7 +435,7 @@ function gltr_is_connection_allowed(){
 	$datafile = dirname(__file__) . '/lockfile.dat';
 	$res = true;
 	if (!file_exists($datafile)){
-      $handle = fopen($datafile, "wb")
+      $handle = @fopen($datafile, "wb")
       	or die("Global Translator initialization failed: unable to create '$datafile' file. Please create it and make it readable and writable.");
 	    fwrite($handle, serialize(time())); //write
       fclose($handle);
