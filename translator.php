@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.3
+Version: 1.0.4
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -42,7 +42,8 @@ your blog language and your preferred configuration options then select "Update 
 
 Upgrading
 =========
-Uninstall the previous version and follow the Installation instructions.
+If upgrading from 0.9 or higher, just overwrite the previous version, otherwise uninstall the previous 
+version and follow the Installation instructions.
 
 Configuration
 =============
@@ -64,6 +65,9 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.0.4
+- Performances improvement in cache cleaning algorithm
 
 1.0.3
 - Added Debug option on the admin area
@@ -894,12 +898,12 @@ function gltr_insert_my_rewrite_parse_query($query) {
   global $gltr_result;
 
   		
-	if (gltr_not_translable_uri()){
-  		return;
-	}
   
   if (isset($query->query_vars['lang'])) {
-  	
+  	$start= round(microtime(true),4);
+		if (gltr_not_translable_uri()){
+	  		return;
+		}
   	$chosen_langs = get_option('gltr_preferred_languages');
 
 		$can_translate = true;
@@ -930,6 +934,8 @@ function gltr_insert_my_rewrite_parse_query($query) {
 		}
 		
     ob_start('gltr_filter_content');
+  	$end = round(microtime(true),4);
+  	gltr_debug("Translated page serving total time:". ($end - $start) . " seconds");
     
   }
 }
@@ -1057,12 +1063,13 @@ function gltr_is_user_agent_allowed() {
 }
 
 function gltr_erase_common_cache_files($post_ID) {
+	$start= round(microtime(true),4);
 	@set_time_limit(120);
   $single_post_pattern = "";
 
 	$categories = array();
 	$tags =  array();
-	
+	$patterns = array();
 	if (isset($post_ID)){
 		$post = get_post($post_ID); 
 		if ($post->post_status != 'publish'){
@@ -1076,8 +1083,36 @@ function gltr_erase_common_cache_files($post_ID) {
   	if (REWRITEON) {
   		$uri = substr (get_permalink($post_ID), strlen(get_option('home')) );
   		$single_post_pattern = gltr_hashReqUri($uri);
+			if (isset($categories) && is_array($categories)){
+				foreach($categories as $category) { 
+			    $patterns[] = '_category_' . strtolower($category->cat_name); 
+				} 
+			} else {
+		    $patterns[] = '_category_'; 
+			}
+			if (isset($tags) && is_array($tags)){
+				foreach($tags as $tag) { 
+			    $patterns[] = '_tag_' . $tag->slug; 
+				}
+			}else{
+		    $patterns[] = '_tag_'; 
+			}			
   	} else {
   		$single_post_pattern = $post_ID;
+			if (isset($categories) && is_array($categories)){
+				foreach($categories as $category) { 
+			    $patterns[] = '_cat=' . strtolower($category->cat_ID); 
+				} 
+			} else {
+		    $patterns[] = '_cat='; 
+			}
+			if (isset($tags) && is_array($tags)){
+				foreach($tags as $tag) { 
+			    $patterns[] = '_tag=' . $tag->slug;  
+				}
+			}else{
+		    $patterns[] = '_tag='; 
+			}
   	}
 	} else {
 			gltr_debug("Post ID not set");
@@ -1085,65 +1120,47 @@ function gltr_erase_common_cache_files($post_ID) {
 	
 
   $cachedir = dirname(__FILE__) . '/cache';
+  //gltr_debug("begin clean");
   if (file_exists($cachedir) && is_dir($cachedir) && is_readable($cachedir)) {
     $handle = opendir($cachedir);
     while (FALSE !== ($item = readdir($handle))) {
     	if( $item != '.' && $item != '..' && $item != 'stale' && !is_dir($item)){
     		gltr_delete_empty_cached_file($item);
-	    	if (REWRITEON) {
-					if (isset($categories) && is_array($categories)){
-						foreach($categories as $category) { 
-					    $pattern = '_category_' . strtolower($category->cat_name); 
-					    if(strstr($item, $pattern)){
+    		$donext = true;
+				foreach($patterns as $pattern) { 
+			    if(strstr($item, $pattern)){
+        		gltr_move_cached_file_to_stale($item);
+        		$donext = false;
+        		break;
+			    }
+				} 
+				if ($donext){
+		    	if (REWRITEON) {
+		        if(	preg_match('/_(' . LANGS_PATTERN . ')_[0-9]{4}_[0-9]{2}/', $item) ||
+								preg_match('/_(' . LANGS_PATTERN . ')_page_[0-9]+$/', $item) ||
+								preg_match('/_(' . LANGS_PATTERN . ')$/', $item) ||
+								preg_match('/_(' . LANGS_PATTERN . ')'.$single_post_pattern.'$/', $item)) {
 		        		gltr_move_cached_file_to_stale($item);
-					    }
-						} 
-					}
-					if (isset($tags) && is_array($tags)){
-						foreach($tags as $tag) { 
-					    //$pattern = '_tag_' . strtolower($tag->name); 
-					    $pattern = '_tag_' . $tag->slug; 
-					    if(strstr($item, $pattern)){
+		        }
+		      } else {
+		      	//no rewrite rules
+		        if(	preg_match('/_p='.$single_post_pattern.'$/', $item) ||
+		        		preg_match('/_paged=[0-9]+$/', $item) ||
+		        		preg_match('/_m=[0-9]{6}$/', $item) ||
+		        		preg_match('/_lang=(' . LANGS_PATTERN . ')$/', $item)) {
 		        		gltr_move_cached_file_to_stale($item);
-					    }
-						}
-					}
-	        if(	preg_match('/_(' . LANGS_PATTERN . ')_[0-9]{4}_[0-9]{2}/', $item) ||
-							preg_match('/_(' . LANGS_PATTERN . ')_page_[0-9]+$/', $item) ||
-							preg_match('/_(' . LANGS_PATTERN . ')$/', $item) ||
-							preg_match('/_(' . LANGS_PATTERN . ')'.$single_post_pattern.'$/', $item)) {
-	        		gltr_move_cached_file_to_stale($item);
-	        }
-	      } else {
-	      	//no rewrite rules
-					if (isset($categories) && is_array($categories)){
-						foreach($categories as $category) { 
-					    $pattern = '_cat=' . strtolower($category->cat_ID); 
-					    if(strstr($item, $pattern)){
-		        		gltr_move_cached_file_to_stale($item);
-					    }
-						} 
-					}
-					if (isset($tags) && is_array($tags)){
-						foreach($tags as $tag) { 
-					    $pattern = '_tag=' . $tag->slug; 
-					    if(strstr($item, $pattern)){
-		        		gltr_move_cached_file_to_stale($item);
-					    }
-						}
-					}
-	        if(	preg_match('/_p='.$single_post_pattern.'$/', $item) ||
-	        		preg_match('/_paged=[0-9]+$/', $item) ||
-	        		preg_match('/_m=[0-9]{6}$/', $item) ||
-	        		preg_match('/_lang=(' . LANGS_PATTERN . ')$/', $item)
-	        ) {
-	        		gltr_move_cached_file_to_stale($item);
-	        }
-	      }
+		        }
+		      }
+		    }
     	}
     }
     closedir($handle);
   }
+  //gltr_debug("end clean");
+  $end= round(microtime(true),4);
+ 	gltr_debug("Cache cleaning process total time:". ($end - $start) . " seconds");
+
+  
 }
 
 function gltr_delete_empty_cached_file($filename){
