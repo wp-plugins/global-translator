@@ -38,7 +38,9 @@ http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 		your blog language and your preferred configuration options then select "Update Options".
 
 How to upgrade
-Uninstall the previous version and follow the Installation instructions.
+
+If upgrading from 0.9 or higher, just overwrite the previous version, otherwise uninstall the previous 
+version and follow the Installation instructions.
 
 == Configuration ==
 
