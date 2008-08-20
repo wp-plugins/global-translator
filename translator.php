@@ -1057,6 +1057,7 @@ function gltr_is_user_agent_allowed() {
 }
 
 function gltr_erase_common_cache_files($post_ID) {
+	@set_time_limit(120);
   $single_post_pattern = "";
 
 	$categories = array();
