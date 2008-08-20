@@ -26,8 +26,8 @@ function gltr_get_dir_size($dir){
         	$cachesize += filesize($path);
       }
     }
+	  closedir($handle);	
   }
-  closedir($handle);	
   return $cachesize;
 }
 function gltr_get_cache_size(){
@@ -547,12 +547,12 @@ if($message!="") { ?>
 	        	<input name="gltr_sitemap_integration" type="checkbox" id="gltr_sitemap_integration"  
 	        	<?php if($gltr_sitemap_integration == TRUE) {?> checked="checked" <?php } ?> /><br />	        	<br />
 	        	By enabling this option, Global Translator will automatically provide the translated url to the installed plugin "<strong>Google XML Sitemaps Generator for WordPress</strong>".<br />
-						After the next sitemap rebuild, all the translated url will be added to the sitemap.xml file.	        	
+						After the next sitemap rebuild, all the translated url will be added to your sitemap.xml file.	        	
         </label>
       <?php
       } else {?>
         <label>"Google XML Sitemaps Generator for WordPress" not detected.<br />
-        	Please download and install the "<a target="_blank" href="http://www.arnebrachhold.de/projects/wordpress-plugins/google-xml-sitemaps-generator/">Google XML Sitemaps Generator for WordPress 3.*</a>" in order to enable this feature.
+        	Please download, install and activate the "<a target="_blank" href="http://www.arnebrachhold.de/projects/wordpress-plugins/google-xml-sitemaps-generator/">Google XML Sitemaps Generator for WordPress 3.*</a>" in order to enable this feature.
         </label>
       <?php
       }?>
