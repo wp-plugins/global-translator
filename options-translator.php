@@ -548,7 +548,7 @@ if($message!="") { ?>
 						<?php _e('Enable sitemap integration') ?>
 	        	<input name="gltr_sitemap_integration" type="checkbox" id="gltr_sitemap_integration"  
 	        	<?php if($gltr_sitemap_integration == TRUE) {?> checked="checked" <?php } ?> /><br />	        	<br />
-	        	By enabling this option, Global Translator will automatically provide the translated url to the installed plugin "<strong>Google XML Sitemaps Generator for WordPress</strong>".<br />
+	        	By enabling this option, Global Translator will automatically provide the translated url to the "<strong>Google XML Sitemaps Generator for WordPress</strong>" plugin.<br />
 						After the next sitemap rebuild, all the translated url will be added to your sitemap.xml file.	        	
         </label>
       <?php

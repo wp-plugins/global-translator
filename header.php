@@ -1,11 +1,13 @@
 <?php
 function gltr_sitemap_plugin_detected(){
-	if (class_exists('GoogleSitemapGenerator')){
-		$generatorObject = &GoogleSitemapGenerator::GetInstance();
-		return($generatorObject!=null);
-	} else {
+	if (function_exists('get_plugins()')){
+		$all_plugins = get_plugins();
+		foreach( (array)$all_plugins as $plugin_file => $plugin_data) {
+			if ($plugin_file == 'google-sitemap-generator/sitemap.php') return true;
+		}
 		return false;
-	}
+	} else
+		return true;
 }
 
 function gltr_create_file($datafile){
@@ -907,5 +909,5 @@ $gltr_available_engines['promt'] = $promtEngine;
 $gltr_available_engines['babelfish'] = $babelfishEngine;
 $gltr_available_engines['freetransl'] = $freetranslationEngine;
 
-$gltr_VERSION='1.0.4';
+$gltr_VERSION='1.0.4beta';
 ?>
