@@ -58,7 +58,7 @@ add_option('gltr_my_translation_engine', 'google');
 add_option('gltr_preferred_languages', array());
 add_option('gltr_ban_prevention', true);
 add_option('gltr_enable_debug', false);
-add_option('gltr_conn_interval',240);
+add_option('gltr_conn_interval',300);
 add_option('gltr_sitemap_integration',false);
 	
 	
@@ -143,7 +143,7 @@ if (isset($_POST['stage'])){
 	      update_option('gltr_preferred_languages', $_POST['gltr_preferred_languages']);
 	      
 	      $conn_int = $_POST['gltr_conn_interval'];
-	      if (!is_numeric($conn_int))$conn_int = 240;
+	      if (!is_numeric($conn_int))$conn_int = 300;
 	      update_option('gltr_conn_interval', $conn_int);
 				$gltr_conn_interval = $conn_int;
 	
@@ -485,7 +485,7 @@ if($message!="") { ?>
         <label><?php _e('Allow only a translation request every ') ?>
 	        	<input size="4"  maxlength="5" name="gltr_conn_interval" type="text" id="gltr_conn_interval" value="<?php echo($gltr_conn_interval);?>"/> seconds.<br /><br />
 	        	This feature represents the final solution which can definitively prevent your blog from being banned by the translation engines.<br />
-	        	For this reason we strongly discourage you to insert an interval value lower than "240" (4 minutes), which should represent an optimal value.<br />
+	        	For this reason we strongly discourage you to insert an interval value lower than "300" (5 minutes), which should represent an optimal value.<br />
 	        	If your blog is sharing its IP address with other blogs using this plugin, the risk of being banned could come back again: in this case I suggest you to  
 	        	increase the timeout value and wait for a while (some days could be necessary).<br />
 	        	<ul>
@@ -549,7 +549,7 @@ if($message!="") { ?>
 	        	<input name="gltr_sitemap_integration" type="checkbox" id="gltr_sitemap_integration"  
 	        	<?php if($gltr_sitemap_integration == TRUE) {?> checked="checked" <?php } ?> /><br />	        	<br />
 	        	By enabling this option, Global Translator will automatically provide the translated url to the "<strong>Google XML Sitemaps Generator for WordPress</strong>" plugin.<br />
-						After the next sitemap rebuild, all the translated url will be added to your sitemap.xml file.	        	
+						After the next sitemap rebuild, all the translated urls will be added to your sitemap.xml file.	        	
         </label>
       <?php
       } else {?>

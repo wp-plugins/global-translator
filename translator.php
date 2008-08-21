@@ -186,7 +186,7 @@ Change Log
 
 require_once (dirname(__file__).'/header.php');
 
-define('HARD_CLEAN', true);
+define('HARD_CLEAN', false);
 
 define('FLAG_BAR_BEGIN', '<!--FLAG_BAR_BEGIN-->');
 define('FLAG_BAR_END', '<!--FLAG_BAR_END-->');
@@ -480,24 +480,29 @@ function gltr_clean_translated_page($buf, $lang) {
 
   //Clean the links modified by the translation engine
   //$buf = urldecode ($buf);
-
-  $buf = preg_replace($gltr_engine->get_links_pattern(), $gltr_engine->get_links_replacement(), $buf);
-  $buf = urldecode($buf);
-
+	
+	foreach($gltr_engine->get_links_pattern() as $id => $pattern)
+  	$buf = preg_replace($pattern, $gltr_engine->get_links_replacement(), $buf);
+  
+  //TODO: test other engines and remove this!
+  if (TRANSLATION_ENGINE != 'google') {
+  	$buf = urldecode($buf);
+	}
+	
   $buf = preg_replace("/<meta name=([\"|']{1})description([\"|']{1})[^>]*>/i", "", $buf);
 	//TODO: add <meta name="language" content="LANG" />
   if (REWRITEON) {
   	//$pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
     $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
-  	$repl = "<a $nofollow href=\"" . BLOG_HOME . '/' . $lang . "\\1\" \\5>";
+  	$repl = "<a href=\"" . BLOG_HOME . '/' . $lang . "\\1\" \\5>";
     $buf = preg_replace($pattern, $repl, $buf);
   } else {
     $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "\/\?(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
-    $repl = "<a $nofollow href=\"" . BLOG_HOME . "?\\1&lang=$lang\" \\5>";
+    $repl = "<a href=\"" . BLOG_HOME . "?\\1&lang=$lang\" \\5>";
     $buf = preg_replace($pattern, $repl, $buf);
     
     $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "[\/]{0,1}\"([^>]*)>/i";
-    $repl = "<a $nofollow href=\"" . BLOG_HOME . "?lang=$lang\" \\1>";
+    $repl = "<a href=\"" . BLOG_HOME . "?lang=$lang\" \\1>";
     $buf = preg_replace($pattern, $repl, $buf);
   }
 
@@ -529,17 +534,19 @@ function gltr_clean_translated_page($buf, $lang) {
 			$beginIdx = $tagClosePos;
 			$tagOpenPos = strpos($buf,"<span style=\"display:none;\">",$currPos);
 			$tagClosePos = strpos($buf,"</span>",$tagOpenPos);
-			if ($tagOpenPos == 0 && ($tagOpenPos === false)){
+			if ($tagOpenPos == 0 && ($tagOpenPos === false) && strlen($result) == 0){
 				$result = $buf;
 				break;
 			}
 			$offset = substr($buf,$tagOpenPos,$tagClosePos - $tagOpenPos + 7);
 			preg_match_all('/<span[^>]*>/U',$offset,$out2,PREG_PATTERN_ORDER);
 			$nestedCount = count($out2[0]);
+			
 			for($i = 1; $i < $nestedCount; $i++){
 				$tagClosePos = strpos($buf,"</span>",$tagClosePos + 7);
 			}
 			if ($beginIdx > 0)$beginIdx += 7;
+			
 			$result .= substr($buf,$beginIdx,$tagOpenPos - $beginIdx);
 			$currPos = $tagClosePos;
 		}

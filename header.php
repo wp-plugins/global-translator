@@ -142,7 +142,10 @@ if(!class_exists("gltr_translation_engine")) {
 $googleEngine = new gltr_translation_engine(
 	'google',
 	'http://translate.google.com/translate_c?hl=en&prev=/language_tools&ie=UTF-8&oe=UTF-8&u=${URL}&langpair=${SRCLANG}|${DESTLANG}',
-	"/href=['\"]{1}[^\"']*u=(.*?)&amp;prev=\/language_tools[^\"']*['\"]{1}/",
+	array(
+		"/href=[']{1}[^']*u=(.*?)&amp;prev=\/language_tools[^']*[']{1}/",
+		"/href=[\"]{1}[^\"]*u=(.*?)&amp;prev=\/language_tools[^\"]*[\"]{1}/"
+	),
 	"href=\"\\1\" ",
 	array(
   'it'    => array( 'it'=>'Italiano',
@@ -728,7 +731,7 @@ $googleEngine = new gltr_translation_engine(
 $babelfishEngine = new gltr_translation_engine(
 	'babelfish',
 	'http://babelfish.altavista.com/babelfish/trurl_pagecontent?lp=${SRCLANG}_${DESTLANG}&url=${URL}',
-	"/<a(.*?)href=\"(.*?)url=(.*?)\"([\s|>]{1})/i",
+	array("/<a(.*?)href=\"(.*?)url=(.*?)\"([\s|>]{1})/i"),
 	"<a href=\"\\3\" \\4",
 	array(
   'it'    => array( 'it'=>'Italiano',
@@ -803,7 +806,7 @@ $promtEngine = new gltr_translation_engine(
   'http://beta.translate.ru/url/translation.aspx?autotranslate=on&sourceURL=${URL}&direction=${SRCLANG}${DESTLANG}',
   //old version 'http://beta.online-translator.com/url/tran_url.asp?prmtlang=en&autotranslate=on&url=${URL}&direction=${SRCLANG}${DESTLANG}',
   //old version 'http://www.online-translator.com/url/tran_url.asp?url=${URL}&direction=${SRCLANG}${DESTLANG}&cp1=UTF-8&cp2=UTF-8&autotranslate=on',
-  "/href=\"(.*?)url=(.*?)\"([\s|>]{1})/i",
+  array("/href=\"(.*?)url=(.*?)\"([\s|>]{1})/i"),
   "href=\"\\2\" \\3",
   array(
   'it'    => array( 'it'=>'Italiano',
@@ -859,7 +862,7 @@ $promtEngine = new gltr_translation_engine(
 $freetranslationEngine = new gltr_translation_engine(
   'freetransl',
   'http://fets5.freetranslation.com/?sequence=core&language=${SRCLANG}/${DESTLANG}&url=${URL}',
-  "/href=\"([^\"]*)\"/i",
+  array("/href=\"([^\"]*)\"/i"),
   "href=\"\\1\"", 
   array(
   'it'    => array( 'it'=>'Italiano',
