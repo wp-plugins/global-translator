@@ -76,7 +76,7 @@ if(!class_exists("gltr_translation_engine")) {
     }
 
 		function set_links_pattern($links_pattern){
-    	$this->_links_pattern = (string)$links_pattern;
+    	$this->_links_pattern = (array)$links_pattern;
     }
 
 		function set_links_replacement($links_replacement){

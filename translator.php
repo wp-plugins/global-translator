@@ -186,7 +186,7 @@ Change Log
 
 require_once (dirname(__file__).'/header.php');
 
-define('HARD_CLEAN', false);
+define('HARD_CLEAN', true);
 
 define('FLAG_BAR_BEGIN', '<!--FLAG_BAR_BEGIN-->');
 define('FLAG_BAR_END', '<!--FLAG_BAR_END-->');
@@ -481,8 +481,10 @@ function gltr_clean_translated_page($buf, $lang) {
   //Clean the links modified by the translation engine
   //$buf = urldecode ($buf);
 	
-	foreach($gltr_engine->get_links_pattern() as $id => $pattern)
+	$patterns = $gltr_engine->get_links_pattern();
+	foreach( $patterns as $id => $pattern){
   	$buf = preg_replace($pattern, $gltr_engine->get_links_replacement(), $buf);
+  }
   
   //TODO: test other engines and remove this!
   if (TRANSLATION_ENGINE != 'google') {
@@ -535,6 +537,7 @@ function gltr_clean_translated_page($buf, $lang) {
 			$tagOpenPos = strpos($buf,"<span style=\"display:none;\">",$currPos);
 			$tagClosePos = strpos($buf,"</span>",$tagOpenPos);
 			if ($tagOpenPos == 0 && ($tagOpenPos === false) && strlen($result) == 0){
+				gltr_debug("===>break all!");
 				$result = $buf;
 				break;
 			}
@@ -550,7 +553,7 @@ function gltr_clean_translated_page($buf, $lang) {
 			$result .= substr($buf,$beginIdx,$tagOpenPos - $beginIdx);
 			$currPos = $tagClosePos;
 		}
-		
+		//gltr_debug($result);
 		$buf = $result;
 	}
   
@@ -908,7 +911,7 @@ function gltr_insert_my_rewrite_parse_query($query) {
   		
   
   if (isset($query->query_vars['lang'])) {
-  	$start= round(microtime(true),4);
+  	//$start= round(microtime(true),4);
 		if (gltr_not_translable_uri()){
 	  		return;
 		}
@@ -942,8 +945,8 @@ function gltr_insert_my_rewrite_parse_query($query) {
 		}
 		
     ob_start('gltr_filter_content');
-  	$end = round(microtime(true),4);
-  	gltr_debug("Translated page serving total time:". ($end - $start) . " seconds");
+  	//$end = round(microtime(true),4);
+  	//gltr_debug("Translated page serving total time:". ($end - $start) . " seconds");
     
   }
 }
@@ -1032,7 +1035,7 @@ function gltr_is_user_agent_allowed() {
     "IDBot", "id-search", "libwww", "lwp-trivial", "curl", "PHP/", "urllib", 
     "GT::WWW", "Snoopy", "MFC_Tear_Sample", "HTTP::Lite", "PHPCrawl", "URI::Fetch", 
     "Zend_Http_Client", "http client", "PECL::HTTP","libwww-perl","SPEEDY SPIDER",
-    "YANDEX","YETI","DOCOMO","DUMBOT","PDFBOT","CAZOODLEBOT","RUNNK");
+    "YANDEX","YETI","DOCOMO","DUMBOT","PDFBOT","CAZOODLEBOT","RUNNK","ICHIRO");
 
   $allowed = array("compatible; MSIE", "T720", "MIDP-1.0", "AU-MIC", "UP.Browser",
     "SonyEricsson", "MobilePhone SCP", "NW.Browser", "Mozilla", "UP.Link",
@@ -1051,7 +1054,7 @@ function gltr_is_user_agent_allowed() {
   } else {
     while (list($key, $val) = each($not_allowed)) {
       if (strstr($ua, strtoupper($val))) {
-        gltr_debug("Detected and blocked user agent: $ua");
+        //gltr_debug("Detected and blocked user agent: $ua");
         return false;
       }
     }
