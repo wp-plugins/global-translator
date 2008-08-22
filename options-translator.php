@@ -541,9 +541,9 @@ if($message!="") { ?>
 	        	<br /><br />
 	        	By enabling this option, Global Translator will automatically provide the translated urls to the "<strong>Google XML Sitemaps Generator for WordPress</strong>" plugin.<br />
 						After the next sitemap rebuild, all the translated urls will be added to your sitemap.xml file.<br />
-						This feature could make the sitemap generation process very memory and time expensive (a lot of urls will be added), so I strongly suggest you to 
+						This feature could make the sitemap generation process slow (a lot of urls could be added): I strongly suggest you to 
 						enable the <strong>"Build the sitemap in a background process"</strong> option from the "<strong>Google XML Sitemaps Generator for WordPress</strong>" 
-						admin page.
+						admin page, otherwise the post saving/publishing actions could become very slow.
         
       <?php
       } else {?>

@@ -957,5 +957,5 @@ $gltr_available_engines['promt'] = $promtEngine;
 $gltr_available_engines['babelfish'] = $babelfishEngine;
 $gltr_available_engines['freetransl'] = $freetranslationEngine;
 
-$gltr_VERSION='1.0.4beta';
+$gltr_VERSION='1.0.4';
 ?>
