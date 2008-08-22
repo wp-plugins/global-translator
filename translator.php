@@ -68,7 +68,8 @@ Change Log
 
 1.0.4
 - Performances improvement in cache cleaning algorithm
-- fixed the sitempa plugin detection function
+- fixed the sitemap plugin detection function
+- fixed javascript errors on translated pages
 
 1.0.3
 - Added Debug option on the admin area
@@ -251,6 +252,8 @@ function gltr_translator_init() {
 }
 
 function gltr_add_translated_pages_to_sitemap() {
+	$start= round(microtime(true),4);
+	@set_time_limit(120);
   global $wpdb;
 	if (gltr_sitemap_plugin_detected()){
 		$generatorObject = &GoogleSitemapGenerator::GetInstance();
@@ -284,6 +287,9 @@ function gltr_add_translated_pages_to_sitemap() {
 			}
 		}
 	}
+  $end = round(microtime(true),4);
+ 	gltr_debug("Translated pages sitemap addition process total time:". ($end - $start) . " seconds");
+	
 }
 
 function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
@@ -314,7 +320,7 @@ function gltr_translate($lang, $url) {
   $url = gltr_get_self_url();
 
   if (!gltr_is_connection_allowed()){
-  	gltr_debug("Translation not allowed for url: $url");
+  	//gltr_debug("Translation not allowed for url: $url");
 		return $unavail_message;
 	}
   
@@ -341,7 +347,7 @@ function gltr_translate($lang, $url) {
 		return gltr_clean_translated_page($buf, $lang);
 	} else {
   	gltr_store_translation_engine_status('banned');
-  	gltr_debug("Bad translated content for url: $url");
+  	gltr_debug("Bad translated content for url: $buf");
 		return $unavail_message;
 	}
 }
@@ -420,42 +426,21 @@ function gltr_is_valid_translated_content($content){
 }
 
 function gltr_store_translation_engine_status($status){
-	$datafile = dirname(__file__) . '/checkfile.dat';
-	if (!file_exists($datafile)){
-    if (!gltr_create_file($datafile)){
-			die("Global Translator initialization failed: unable to create '$datafile' file. Please create it and make it readable and writable.");	
-    }
-	} 
-	if (!is_readable($datafile) || !is_writeable($datafile)){
-		die("Global Translator initialization failed: can't open '$datafile' file. Please make it readable and writable.");	
+	$exists = get_option("gltr_translation_status");
+	if($exists === false){ 
+		add_option("gltr_translation_status","unknown");
 	}
-		
-  $handle = fopen($datafile, "wb");
-  fwrite($handle, serialize($status)); //write
-  fclose($handle);
+	update_option("gltr_translation_status",$status);	
 }
 
 function gltr_is_connection_allowed(){
-	$last_connection_time = 0;
-	$datafile = dirname(__file__) . '/lockfile.dat';
-	$res = true;
-	if (!file_exists($datafile)){
-      $handle = @fopen($datafile, "wb")
-      	or die("Global Translator initialization failed: unable to create '$datafile' file. Please create it and make it readable and writable.");
-	    fwrite($handle, serialize(time())); //write
-      fclose($handle);
-	} 	
+
+	$last_connection_time = get_option("gltr_last_connection_time");
+	if($last_connection_time === false){ 
+		add_option("gltr_last_connection_time",0);
+		$last_connection_time = 0;
+	} 
 	
-	if (!is_readable($datafile) || !is_writeable($datafile)){
-		die("Global Translator initialization failed: can't open '$datafile' file. Please make it readable and writable.");	
-	}
-	
-	if (is_file($datafile)){
-      $last_connection_time = unserialize(file_get_contents($datafile));
-      if (!is_numeric($last_connection_time)){
-      	$last_connection_time = 0;
-      }
-	}
 	if ($last_connection_time > 0){
 		$now = time();
 		$delta = $now - $last_connection_time;
@@ -464,13 +449,13 @@ function gltr_is_connection_allowed(){
 			$res = false;
 		} else {
 			gltr_debug("Allowing connection request: last_connection_time=$last_connection_time now=$now delta=$delta ");
-	    $handle = fopen($datafile, "wb");
-	    fwrite($handle, serialize($now)); //write
-	    fclose($handle);
+			update_option("gltr_last_connection_time", $now);
 	    $res = true;
 	  }
 	} else {
-		gltr_debug("Warning: 'last_connection_time' is undefined");
+		gltr_debug("Warning: 'last_connection_time' is undefined: allowing translation");
+		update_option("gltr_last_connection_time", time());
+		$res = true;
 	}
 	return $res;
 }
@@ -519,9 +504,10 @@ function gltr_clean_translated_page($buf, $lang) {
     $buf = preg_replace("/\<div(.*)http:\/\/www\.freetranslation\.com\/images\/logo\.gif(.*)\<\/div\>/i", "", $buf);
     $buf = str_replace(array("{L","L}"), array("",""), $buf);
   } else if (TRANSLATION_ENGINE == 'google') {
+    $buf = preg_replace("/<script>[^<]*<\/script><script src=\"[^\"]*translate_c.js\"><\/script><script>_intlStrings[^<]*<\/script><style type=\"text\/css\">\.google-src-text[^<]*<\/style>/i", "",$buf);
+    $buf = preg_replace("/_setupIW\(\);_csi\([^\)]*\);/","",$buf);
     $buf = preg_replace("/onmouseout=\"_tipoff\(\)\"/i", "",$buf);
     $buf = preg_replace("/onmouseover=\"_tipon\(this\)\"/i", "",$buf);
-    $buf = preg_replace("/_setupIW()/", "", $buf);
     $buf = preg_replace("/<span class=\"google-src-text\"[^>]*>/i", "<span style=\"display:none;\">",$buf);
   }
   
@@ -1075,7 +1061,7 @@ function gltr_is_user_agent_allowed() {
 
 function gltr_erase_common_cache_files($post_ID) {
 	$start= round(microtime(true),4);
-	@set_time_limit(120);
+	
   $single_post_pattern = "";
 
 	$categories = array();

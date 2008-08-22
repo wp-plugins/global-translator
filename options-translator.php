@@ -1,16 +1,6 @@
 <?php
 require_once (dirname(__file__).'/header.php');
 
-function gltr_ban_status(){
-	$datafile = dirname(__file__) . '/checkfile.dat';
-	$res = 'unknown';
-	if (is_file($datafile) && filesize($datafile) > 0){
-		$res = unserialize(file_get_contents($datafile));
-	}
-	return $res;
-}
-
-
 function gltr_get_dir_size($dir){
 	$cachesize = 0;
   if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
@@ -37,14 +27,11 @@ function gltr_get_stale_size(){
 
 function gltr_get_last_cached_file_time(){
 	$res = -1;
-	$datafile = dirname(__file__) . '/lockfile.dat';
-	if (is_file($datafile) && filesize($datafile) > 0){
-      $handle = fopen($datafile, "rb");
-      $last_connection_time = unserialize(fread($handle, filesize($datafile)));
-      $now = time();
-      $res = $now - $last_connection_time;
-      fclose($handle);
-	} 
+  $last_connection_time = get_option("gltr_last_connection_time");
+  if ($last_connection_time > 0){
+	  $now = time();
+	  $res = $now - $last_connection_time;
+  }
 	return $res;
 }
 
@@ -60,6 +47,8 @@ add_option('gltr_ban_prevention', true);
 add_option('gltr_enable_debug', false);
 add_option('gltr_conn_interval',300);
 add_option('gltr_sitemap_integration',false);
+add_option("gltr_last_connection_time",0);
+add_option("gltr_translation_status","unknown");
 	
 	
 $location = get_option('siteurl') . '/wp-admin/admin.php?page=global-translator/options-translator.php'; // Form Action URI
@@ -130,17 +119,15 @@ if (isset($_POST['stage'])){
 	    }
 	    
 	    if(!$iserror) {
-	    	if (get_option('gltr_my_translation_engine') != $_POST['gltr_my_translation_engine']){
-	    		$datafile = dirname(__file__) . '/checkfile.dat';
-	    		if (is_file($datafile))
-	    			unlink($datafile);
-	    	}
+
 	      update_option('gltr_base_lang', $_POST['gltr_base_lang']);
 	      update_option('gltr_col_num', $_POST['gltr_col_num']);
 	      update_option('gltr_html_bar_tag', $_POST['gltr_html_bar_tag']);
 	      update_option('gltr_my_translation_engine', $_POST['gltr_my_translation_engine']);
 	      update_option('gltr_preferred_languages', array());
 	      update_option('gltr_preferred_languages', $_POST['gltr_preferred_languages']);
+				update_option("gltr_last_connection_time",0);
+				update_option("gltr_translation_status","unknown");
 	      
 	      $conn_int = $_POST['gltr_conn_interval'];
 	      if (!is_numeric($conn_int))$conn_int = 300;
@@ -228,9 +215,8 @@ if (isset($_POST['stage'])){
 	  }
 	  
 	  //check files
+	  /*
 	  $datafiles = array();
-	  $datafiles[] = dirname(__file__) . '/checkfile.dat';
-	  $datafiles[] = dirname(__file__) . '/lockfile.dat';
 	  foreach($datafiles as $datafile){
 	  	if(!is_file($datafile)){
 		    if (!gltr_create_file($datafile)){
@@ -242,6 +228,7 @@ if (isset($_POST['stage'])){
 		    <ul><li>".$datafile."</li></ul><br />";  		
 	  	}
 	  }  
+	  */
 	}  
 }
 
@@ -483,7 +470,7 @@ if($message!="") { ?>
   		<table width="100%" cellpadding="5" class="editform">
   		<tr><td>
         <label><?php _e('Allow only a translation request every ') ?>
-	        	<input size="4"  maxlength="5" name="gltr_conn_interval" type="text" id="gltr_conn_interval" value="<?php echo($gltr_conn_interval);?>"/> seconds.<br /><br />
+	        	<input size="4"  maxlength="5" name="gltr_conn_interval" type="text" id="gltr_conn_interval" value="<?php echo($gltr_conn_interval);?>"/> seconds.</label><br /><br />
 	        	This feature represents the final solution which can definitively prevent your blog from being banned by the translation engines.<br />
 	        	For this reason we strongly discourage you to insert an interval value lower than "300" (5 minutes), which should represent an optimal value.<br />
 	        	If your blog is sharing its IP address with other blogs using this plugin, the risk of being banned could come back again: in this case I suggest you to  
@@ -491,6 +478,7 @@ if($message!="") { ?>
 	        	<ul>
 						<?php
 	        	$diff_time = gltr_get_last_cached_file_time();
+
 						if ($diff_time > 0){
 		        	echo ("<li>Latest allowed connection to the translation engine: <strong>");
 	    	      if ($diff_time < 60){
@@ -506,10 +494,11 @@ if($message!="") { ?>
 						}
 						echo ("</strong></li>");
 						
-						echo ("<li>Translations status: <strong>");						
-						if (gltr_ban_status() == 'banned'){
+						echo ("<li>Translations status: <strong>");	
+						$ban_status = get_option("gltr_translation_status");					
+						if ($ban_status == 'banned'){
 							echo("<font color='red'>Bad response from the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine: your blog could have been temporarily banned</font>");
-						} else if (gltr_ban_status() == 'working'){
+						} else if ($ban_status == 'working'){
 							echo("<font color='green'>Working properly</font>");
 						} else {
 							echo("not available");
@@ -519,7 +508,7 @@ if($message!="") { ?>
 	        </ul>
 	        	
 	        	
-        </label>
+        
       </td></tr>
       </table>
     </fieldset>
@@ -530,10 +519,11 @@ if($message!="") { ?>
   		<tr><td>
         <label><?php _e('Block "bad" web spiders and crawlers') ?>
 	        	<input name="gltr_ban_prevention" type="checkbox" id="gltr_ban_prevention"  
-	        	<?php if($gltr_ban_prevention == TRUE) {?> checked="checked" <?php } ?> /><br />	        	<br />
+	        	<?php if($gltr_ban_prevention == TRUE) {?> checked="checked" <?php } ?> /></label>
+	        	<br />	        	<br />
 	        	By enabling this option, Global Translator will block the access to the translated pages to a lot of "bad" web spiders.
  	          This function could help the <strong>built-in cache</strong> to prevent "unuseful" translation requests.
-        </label>
+        
       </td></tr>
       </table>   
     </fieldset>
@@ -547,10 +537,14 @@ if($message!="") { ?>
         <label>
 						<?php _e('Enable sitemap integration') ?>
 	        	<input name="gltr_sitemap_integration" type="checkbox" id="gltr_sitemap_integration"  
-	        	<?php if($gltr_sitemap_integration == TRUE) {?> checked="checked" <?php } ?> /><br />	        	<br />
-	        	By enabling this option, Global Translator will automatically provide the translated url to the "<strong>Google XML Sitemaps Generator for WordPress</strong>" plugin.<br />
-						After the next sitemap rebuild, all the translated urls will be added to your sitemap.xml file.	        	
-        </label>
+	        	<?php if($gltr_sitemap_integration == TRUE) {?> checked="checked" <?php } ?> /></label>
+	        	<br /><br />
+	        	By enabling this option, Global Translator will automatically provide the translated urls to the "<strong>Google XML Sitemaps Generator for WordPress</strong>" plugin.<br />
+						After the next sitemap rebuild, all the translated urls will be added to your sitemap.xml file.<br />
+						This feature could make the sitemap generation process very memory and time expensive (a lot of urls will be added), so I strongly suggest you to 
+						enable the <strong>"Build the sitemap in a background process"</strong> option from the "<strong>Google XML Sitemaps Generator for WordPress</strong>" 
+						admin page.
+        
       <?php
       } else {?>
         <label>"Google XML Sitemaps Generator for WordPress" not detected.<br />

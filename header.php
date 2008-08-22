@@ -37,6 +37,51 @@ if (!function_exists('file_get_contents')) {
 		return $buf;
 	}	
 }
+if(!class_exists("gltr_translation_engine")) {
+	class gltr_translation_status {
+		
+		var $_status;
+		var $_last_connection_time;
+		
+		function gltr_translation_status() {
+			$exists = get_option("gltr_translation_status");
+			if($exists === false){ 
+				add_option("gltr_translation_status","");
+			}
+			$this->save();
+		}
+		
+		function save() {
+			update_option("gltr_translation_status",$this);		
+		}		
+
+		function load() {
+			$status = @get_option("gltr_translation_status");
+			if(is_a($status,"gltr_translation_status")) return $status;
+			else return null;	
+		}
+			
+    function save_status($status){
+    	$this->_status = $status;
+    	$this->save();
+    }
+
+    function get_status(){
+    	return $this->_status;
+    }
+		
+    function save_last_connection_time($last_connection_time){
+    	$this->_last_connection_time = $last_connection_time;
+    	$this->save();
+    }
+
+    function get_last_connection_time(){
+    	return $this->_last_connection_time;
+    }
+		
+	}
+
+}
 
 if(!class_exists("gltr_translation_engine")) {
 	class gltr_translation_engine {
