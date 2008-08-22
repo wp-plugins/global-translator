@@ -70,7 +70,7 @@ You're using an old version of the plugin. Please upgrade to 1.0 or later.
 
 = "This page has not been translated yet. The translation process could take a while: please come back later." message when trying to access a translated page =
 
-In order to prevent from banning by the translation services, only a translation request every 4 minutes will be allowed. This will permit to fully translate
+In order to prevent from banning by the translation services, only a translation request every 5 minutes will be allowed. This will permit to fully translate
 your blog whithout any interruption; this message will completely disappear when all the pages of your blog will be cached.
 Remember that this message will also appear if you're currently being banned by the translation engine: this could happen if for example your blog shares the
 same ip address with other blogs using older versions of Global Translator.
