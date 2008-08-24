@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.4
+Version: 1.0.5beta
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -65,6 +65,9 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.0.5
+- Random User Agent selection for translation requests
 
 1.0.4
 - Performances improvement in cache cleaning algorithm
@@ -572,10 +575,19 @@ function gltr_get_extensions_skip_pattern() {
 	return $res;
 }
 
+function gltr_get_random_UA(){
+	global $gltr_ua;
+	$tot = count($gltr_ua);
+	$id = rand( 0, count($gltr_ua)-1 );
+	$ua = $gltr_ua[$id];
+	//gltr_debug("Random UA nr $id: $ua");
+	return $ua;
+}
+
 function gltr_build_request($host, $http_req) {
   $res = "GET $http_req HTTP/1.0\r\n";
   $res .= "Host: $host\r\n";
-  $res .= "User-Agent: " . USER_AGENT . " \r\n";
+  $res .= "User-Agent: " . gltr_get_random_UA() . " \r\n";
   //$res .= "Content-Type: application/x-www-form-urlencoded\r\n";
   //$res .= "Content-Length: 0\r\n";
   $res .= "Connection: close\r\n\r\n";
@@ -815,11 +827,6 @@ function gltr_get_page_content($lang, $url) {
     // We are done, just return the file and exit
     gltr_debug("cache: returning cached version ($hash) for url:" . gltr_get_self_url());
     
-    //$handle = fopen($filename, "rb");
-    //$page = fread($handle, filesize($filename));
-    //$page .= "<!--CACHED VERSION: $unique_url_string ($hash)-->";
-    //fclose($handle);
-    
     $page = file_get_contents($filename);
     $page .= "<!--CACHED VERSION ($hash)-->";
     
@@ -843,7 +850,8 @@ function gltr_get_page_content($lang, $url) {
     $page = gltr_translate($lang, $url);
     //check the content to be cached
 		if (gltr_is_valid_translated_content($page)) {
-      gltr_debug("cache: caching ($filename) [".strlen($page)."] url:" . gltr_get_self_url());
+			$gltr_last_cached_url = gltr_get_self_url();
+      gltr_debug("cache: caching ($filename) [".strlen($page)."] url:" . $gltr_last_cached_url);
       $handle = fopen($filename, "wb");
       if (flock($handle, LOCK_EX)) { // do an exclusive lock
         fwrite($handle, $page); //write
@@ -860,10 +868,6 @@ function gltr_get_page_content($lang, $url) {
     	//translation not available. Switching to stale
 	    if (file_exists($stale_filename) && filesize($stale_filename) > 0) {
 	      gltr_debug("cache: returning stale version ($hash) for url:" . gltr_get_self_url());
-	      //$handle = fopen($stale_filename, "rb");
-	      //$page = fread($handle, filesize($stale_filename));
-	      //$page .= "<!--STALE VERSION: $unique_url_string ($hash)-->";
-	      //fclose($handle);
 	      $page = file_get_contents($stale_filename);
 	      $page .= "<!--STALE VERSION: ($hash)-->";
 	 			$from_cache = true;
@@ -1021,7 +1025,8 @@ function gltr_is_user_agent_allowed() {
     "IDBot", "id-search", "libwww", "lwp-trivial", "curl", "PHP/", "urllib", 
     "GT::WWW", "Snoopy", "MFC_Tear_Sample", "HTTP::Lite", "PHPCrawl", "URI::Fetch", 
     "Zend_Http_Client", "http client", "PECL::HTTP","libwww-perl","SPEEDY SPIDER",
-    "YANDEX","YETI","DOCOMO","DUMBOT","PDFBOT","CAZOODLEBOT","RUNNK","ICHIRO");
+    "YANDEX","YETI","DOCOMO","DUMBOT","PDFBOT","CAZOODLEBOT","RUNNK","ICHIRO",
+    "SPHERE SCOUT");
 
   $allowed = array("compatible; MSIE", "T720", "MIDP-1.0", "AU-MIC", "UP.Browser",
     "SonyEricsson", "MobilePhone SCP", "NW.Browser", "Mozilla", "UP.Link",
@@ -1067,6 +1072,7 @@ function gltr_erase_common_cache_files($post_ID) {
 	$categories = array();
 	$tags =  array();
 	$patterns = array();
+
 	if (isset($post_ID)){
 		$post = get_post($post_ID); 
 		if ($post->post_status != 'publish'){
@@ -1111,6 +1117,27 @@ function gltr_erase_common_cache_files($post_ID) {
 		    $patterns[] = '_tag='; 
 			}
   	}
+
+		$datepattern = "";
+		$post_time = $post->post_date;
+		if (isset($post_time) && function_exists('mysql2date')){
+			$year = mysql2date(__('Y'), $post_time);
+			$month = mysql2date(__('m'), $post_time);
+			//gltr_debug("==>post y=$year m=$month");
+			if (REWRITEON){
+				$datepattern = $year . "_" . $month;
+			} else {
+				$datepattern = "$year$month";
+			}
+		} else {
+			if (REWRITEON){
+				$datepattern = "[0-9]{4}_[0-9]{2}";
+			} else {
+				$datepattern = "[0-9]{6}";
+			}
+		}
+  	
+  	
 	} else {
 			gltr_debug("Post ID not set");
 	}
@@ -1133,7 +1160,7 @@ function gltr_erase_common_cache_files($post_ID) {
 				} 
 				if ($donext){
 		    	if (REWRITEON) {
-		        if(	preg_match('/_(' . LANGS_PATTERN . ')_[0-9]{4}_[0-9]{2}/', $item) ||
+		        if(	preg_match('/_(' . LANGS_PATTERN . ')_'.$datepattern.'$/', $item) ||
 								preg_match('/_(' . LANGS_PATTERN . ')_page_[0-9]+$/', $item) ||
 								preg_match('/_(' . LANGS_PATTERN . ')$/', $item) ||
 								preg_match('/_(' . LANGS_PATTERN . ')'.$single_post_pattern.'$/', $item)) {
@@ -1143,7 +1170,7 @@ function gltr_erase_common_cache_files($post_ID) {
 		      	//no rewrite rules
 		        if(	preg_match('/_p='.$single_post_pattern.'$/', $item) ||
 		        		preg_match('/_paged=[0-9]+$/', $item) ||
-		        		preg_match('/_m=[0-9]{6}$/', $item) ||
+		        		preg_match('/_m='.$datepattern.'$/', $item) ||
 		        		preg_match('/_lang=(' . LANGS_PATTERN . ')$/', $item)) {
 		        		gltr_move_cached_file_to_stale($item);
 		        }
@@ -1176,7 +1203,7 @@ function gltr_move_cached_file_to_stale($filename){
 
   $src = $cachedir . '/' . $filename;
   $dst = $staledir . '/' . $filename;
-  if (!rename($src,$dst)){
+  if (!@rename($src,$dst)){
 	  gltr_debug("Unable to move cached file $src to stale $dst");
   } else {
 	  gltr_debug("Moving cached file $src to stale $dst");

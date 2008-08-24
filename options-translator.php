@@ -472,7 +472,7 @@ if($message!="") { ?>
         <label><?php _e('Allow only a translation request every ') ?>
 	        	<input size="4"  maxlength="5" name="gltr_conn_interval" type="text" id="gltr_conn_interval" value="<?php echo($gltr_conn_interval);?>"/> seconds.</label><br /><br />
 	        	This feature represents the final solution which can definitively prevent your blog from being banned by the translation engines.<br />
-	        	For this reason we strongly discourage you to insert an interval value lower than "300" (5 minutes), which should represent an optimal value.<br />
+	        	For this reason we strongly discourage you to insert an interval value lower than "300" (5 minutes), which should represent an optimal value expecially for high-traffic blogs.<br />
 	        	If your blog is sharing its IP address with other blogs using this plugin, the risk of being banned could come back again: in this case I suggest you to  
 	        	increase the timeout value and wait for a while (some days could be necessary).<br />
 	        	<ul>
@@ -482,28 +482,37 @@ if($message!="") { ?>
 						if ($diff_time > 0){
 		        	echo ("<li>Latest allowed connection to the translation engine: <strong>");
 	    	      if ($diff_time < 60){
-				      	echo (round(($diff_time)) . " seconds ago");
+				      	echo (round(($diff_time)) . " seconds ago</strong>");
 	      			}else if ($diff_time > 60*60){
-	      				echo (round(($diff_time)/3600) . " hours ago");
+	      				echo (round(($diff_time)/3600) . " hours ago</strong>");
 								    
 		      		}else{
-		      			echo (round(($diff_time)/60) . " minutes ago");
+		      			echo (round(($diff_time)/60) . " minutes ago</strong>");
 		      		}
+		      		/*
+		      		global $gltr_last_cached_url;
+		      		if (strlen($gltr_last_cached_url)>0){
+		      			echo (". [<a target='_blank' href='$gltr_last_cached_url'>See latest translated page</a>]");
+		      		}
+		      		*/
 						} else {
-							echo ("<li>Latest allowed connection to the translation engine: <strong>not available");
+							echo ("<li>Latest allowed connection to the translation engine: <strong>not available</strong>");
 						}
-						echo ("</strong></li>");
+						echo ("</li>");
 						
-						echo ("<li>Translations status: <strong>");	
+						echo ("<li>Translations status: ");	
 						$ban_status = get_option("gltr_translation_status");					
 						if ($ban_status == 'banned'){
-							echo("<font color='red'>Bad response from the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine: your blog could have been temporarily banned</font>");
+							echo("<strong><font color='red'>Bad or unhandled response from the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine.</font></strong> This could mean that:
+							<ul><li>your blog has been temporarily banned: wait for some days or switch to another translation engine</li>
+							<li>the translation engine is currently not responding/working: wait for some days or switch to another translation engine</li>
+							<li>the flags bar has not been added to your pages: adding the flags bar is mandatory in order to make Global Translator able to work correctly</li></font>");
 						} else if ($ban_status == 'working'){
-							echo("<font color='green'>Working properly</font>");
+							echo("<strong><font color='green'>Working properly</font></strong>");
 						} else {
-							echo("not available");
+							echo("<strong>not available</strong>");
 						}
-						echo ("</strong></li>");
+						echo ("</li>");
 	        	?>
 	        </ul>
 	        	
@@ -522,7 +531,8 @@ if($message!="") { ?>
 	        	<?php if($gltr_ban_prevention == TRUE) {?> checked="checked" <?php } ?> /></label>
 	        	<br />	        	<br />
 	        	By enabling this option, Global Translator will block the access to the translated pages to a lot of "bad" web spiders.
- 	          This function could help the <strong>built-in cache</strong> to prevent "unuseful" translation requests.
+ 	          This function could help the <strong>built-in cache</strong> to prevent "unuseful" translation requests expecially if you have an high-traffic blog.<br />
+ 	          If you have a low traffic blog I suggest you to disable this option.
         
       </td></tr>
       </table>   
@@ -590,5 +600,6 @@ if($message!="") { ?>
 </div>
 
 <?php
+if (!is_numeric($gltr_col_num))$gltr_col_num = 0;
 gltr_build_js_function($gltr_base_lang, $gltr_col_num);
 ?>
