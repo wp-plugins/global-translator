@@ -336,7 +336,7 @@ if(!class_exists("gltr_translation_engine")) {
 
 $googleEngine = new gltr_translation_engine(
 	'google',
-	'http://66.102.9.104/translate_n?hl=en&ie=UTF-8&oe=UTF-8&langpair=${SRCLANG}|${DESTLANG}&u=${URL}&prev=/language_tools',
+	'http://translate.google.com/translate_n?hl=en&ie=UTF-8&oe=UTF-8&langpair=${SRCLANG}|${DESTLANG}&u=${URL}&prev=/language_tools',
 	array(
 		"/href=[']{1}[^']*u=(.*?)&amp;prev=\/language_tools[^']*[']{1}/",
 		"/href=[\"]{1}[^\"]*u=(.*?)&amp;prev=\/language_tools[^\"]*[\"]{1}/"
