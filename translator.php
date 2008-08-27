@@ -298,6 +298,9 @@ function gltr_add_translated_pages_to_sitemap() {
 
 function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
   global $gltr_engine;
+  if ($gltr_engine->get_name() == 'google'){
+  	$urlToTransl = str_replace(array('?','='),array('%3F','%3D'),$urlToTransl);
+  }
   $tokens = array('${URL}', '${SRCLANG}', '${DESTLANG}');
   $srcLang = $gltr_engine->decode_lang_code($srcLang);
   $destLang = $gltr_engine->decode_lang_code($destLang);
@@ -305,12 +308,12 @@ function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
   $res = str_replace($tokens, $values, $gltr_engine->get_base_url());
   if ($gltr_engine->get_name() == 'google'){
     gltr_debug("Google Patch: calling: $res");
-    $tmp_buf = gltr_http_get_content( $res);
-    $matches = array();
-    preg_match(
-      '/usg=([^"]*)"/',$tmp_buf,$matches);
-    $res = str_replace('translate_n','translate_c',$res);
-    $res .= "&usg=$matches[1]";
+    $maincont = gltr_http_get_content( $res);
+
+		$matches = array();
+		preg_match( '/(http:\/\/[0-9\.]*\/translate_c[^"]*)"/',$maincont,$matches);
+		$res = $matches[1];
+		$res = str_replace('&amp;','&', $res);    
 	}
   /*
   if ($gltr_engine->get_name() == 'freetransl'){
