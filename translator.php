@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.5beta
+Version: 1.0.5
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -68,6 +68,7 @@ Change Log
 
 1.0.5
 - Random User Agent selection for translation requests
+- Hacked new Google block introduced on (27th of August 2008)
 
 1.0.4
 - Performances improvement in cache cleaning algorithm
@@ -302,6 +303,15 @@ function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
   $destLang = $gltr_engine->decode_lang_code($destLang);
   $values = array($urlToTransl, $srcLang, $destLang);
   $res = str_replace($tokens, $values, $gltr_engine->get_base_url());
+  if ($gltr_engine->get_name() == 'google'){
+    gltr_debug("Google Patch: calling: $res");
+    $tmp_buf = gltr_http_get_content( $res);
+    $matches = array();
+    preg_match(
+      '/usg=([^"]*)"/',$tmp_buf,$matches);
+    $res = str_replace('translate_n','translate_c',$res);
+    $res .= "&usg=$matches[1]";
+	}
   /*
   if ($gltr_engine->get_name() == 'freetransl'){
     $tmp_buf = gltr_http_get_content("http://www.freetranslation.com/");
@@ -588,9 +598,10 @@ function gltr_build_request($host, $http_req) {
   $res = "GET $http_req HTTP/1.0\r\n";
   $res .= "Host: $host\r\n";
   $res .= "User-Agent: " . gltr_get_random_UA() . " \r\n";
-  //$res .= "Content-Type: application/x-www-form-urlencoded\r\n";
-  //$res .= "Content-Length: 0\r\n";
-  $res .= "Connection: close\r\n\r\n";
+  $res .= "Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5\r\n";
+  $res .= "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7\r\n";
+  $res .= "Connection: close\r\n";
+  $res .= "\r\n";
   return $res;
 }
 

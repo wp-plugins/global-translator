@@ -336,7 +336,7 @@ if(!class_exists("gltr_translation_engine")) {
 
 $googleEngine = new gltr_translation_engine(
 	'google',
-	'http://translate.google.com/translate_c?hl=en&prev=/language_tools&ie=UTF-8&oe=UTF-8&u=${URL}&langpair=${SRCLANG}|${DESTLANG}',
+	'http://66.102.9.104/translate_n?hl=en&ie=UTF-8&oe=UTF-8&langpair=${SRCLANG}|${DESTLANG}&u=${URL}&prev=/language_tools',
 	array(
 		"/href=[']{1}[^']*u=(.*?)&amp;prev=\/language_tools[^']*[']{1}/",
 		"/href=[\"]{1}[^\"]*u=(.*?)&amp;prev=\/language_tools[^\"]*[\"]{1}/"
@@ -1107,5 +1107,5 @@ $gltr_available_engines['promt'] = $promtEngine;
 $gltr_available_engines['babelfish'] = $babelfishEngine;
 $gltr_available_engines['freetransl'] = $freetranslationEngine;
 
-$gltr_VERSION='1.0.5beta';
+$gltr_VERSION='1.0.5';
 ?>

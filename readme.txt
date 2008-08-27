@@ -5,7 +5,7 @@ Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.3
 Tested up to: 2.6
-Stable Tag: 1.0.4
+Stable Tag: 1.0.5
 
 Automatically translates your blog in fourteen different languages!
 
@@ -55,6 +55,9 @@ for your language will appear on your blog.
 
 == Frequently Asked Questions ==
 
+= I have a Global Translator version prior than 1.0.5 and Google doesn't translate anymore! =
+
+Starting from 27th of August 2008, Google has introduced a block in order to prevent not human translation requests: just upgrade to 1.0.5 or later.
 
 = White page or Page Not Found (404) when clicking on a translation flag =
 

@@ -1,29 +1,43 @@
 <?php
 require_once (dirname(__file__).'/header.php');
+$gltr_stale_size = 0;
+$gltr_cache_size = 0;
+$gltr_cached_files_num = 0;
 
-function gltr_get_dir_size($dir){
-	$cachesize = 0;
+function gltr_init_info(){
+	global $gltr_stale_size;
+	global $gltr_cache_size;
+	global $gltr_cached_files_num;
+	//cachedir
+  $dir = dirname(__FILE__) . '/cache';
   if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
     $handle = opendir($dir);
     while (FALSE !== ($item = readdir($handle))) {
       if($item != '.' && $item != '..') {
         $path = $dir.'/'.$item;
         if (file_exists($path) && is_file($path))
-        	$cachesize += filesize($path);
+        	$gltr_cache_size += filesize($path);
+        	$gltr_cached_files_num++;
       }
     }
 	  closedir($handle);	
   }
-  return $cachesize;
+  $dir = dirname(__FILE__) . '/cache/stale';
+  if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
+    $handle = opendir($dir);
+    while (FALSE !== ($item = readdir($handle))) {
+      if($item != '.' && $item != '..') {
+        $path = $dir.'/'.$item;
+        if (file_exists($path) && is_file($path))
+        	$gltr_stale_size += filesize($path);
+      }
+    }
+	  closedir($handle);	
+  }
+
 }
-function gltr_get_cache_size(){
-  $cachedir = dirname(__FILE__) . '/cache';
-	return gltr_get_dir_size($cachedir);
-}
-function gltr_get_stale_size(){
-  $cachedir = dirname(__FILE__) . '/cache/stale';
-	return gltr_get_dir_size($cachedir);
-}
+gltr_init_info();
+
 
 function gltr_get_last_cached_file_time(){
 	$res = -1;
@@ -447,12 +461,13 @@ if($message!="") { ?>
         <label>
 	        	Global Translator uses a fast, smart, optimized, self-cleaning and built-in caching system in order to drastically reduce the connections to the translation engines.
 						This feature cannot be optional and is needed in order to prevent from banning by the translation services. For the same reason the translation process will not be 
-						immediate and the full translation of the blog could take a while: this is because by default only a translation request every 4 minutes will be allowed (see next section). 
+						immediate and the full translation of the blog could take a while: this is because by default only a translation request every 5 minutes will be allowed (see next section). 
 	        	<br /> 
 	        	The cache invalidation will be automatically (and smartly) handled when a post is created, deleted or updated.
 	        	<br/>
-	        	<strong>Cache dir size</strong>: <?php $size=round(gltr_get_cache_size()/1024,1); echo ($size);?> KB<br/>
-	        	<strong>Stale dir size</strong>: <?php $size=round(gltr_get_stale_size()/1024,1); echo ($size);?> KB<br/>
+	        	<strong>Your cache dir currently contains <?php echo($gltr_cached_files_num)?> successfully translated and cached pages.</strong><br />
+	        	<strong>Cache dir size</strong>: <?php $size=round($gltr_cache_size/1024,1); echo ($size);?> KB<br/>
+	        	<strong>Stale dir size</strong>: <?php $size=round($gltr_stale_size/1024,1); echo ($size);?> KB<br/>
 	        	
         </label>
       </td></tr>
@@ -504,9 +519,10 @@ if($message!="") { ?>
 						$ban_status = get_option("gltr_translation_status");					
 						if ($ban_status == 'banned'){
 							echo("<strong><font color='red'>Bad or unhandled response from the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine.</font></strong> This could mean that:
-							<ul><li>your blog has been temporarily banned: wait for some days or switch to another translation engine</li>
+							<ul><li>your blog has been temporarily banned: increase the time interval between the translation requests and wait for some days or switch to another translation engine</li>
 							<li>the translation engine is currently not responding/working: wait for some days or switch to another translation engine</li>
-							<li>the flags bar has not been added to your pages: adding the flags bar is mandatory in order to make Global Translator able to work correctly</li></font>");
+							<li>the translation engine has changed something (i.e. the translation url): wait for the next release of Global Translator :-)</li>
+							<li>you haven't added the flags widget on your pages: adding the flags bar is mandatory in order to make Global Translator able to work correctly</li></font>");
 						} else if ($ban_status == 'working'){
 							echo("<strong><font color='green'>Working properly</font></strong>");
 						} else {
