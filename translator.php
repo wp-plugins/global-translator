@@ -298,6 +298,9 @@ function gltr_add_translated_pages_to_sitemap() {
 
 function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
   global $gltr_engine;
+  if ($gltr_engine->get_name() == 'google'){
+  	$urlToTransl = str_replace(array('?','='),array('%3F','%3D'),$urlToTransl);
+  }
   $tokens = array('${URL}', '${SRCLANG}', '${DESTLANG}');
   $srcLang = $gltr_engine->decode_lang_code($srcLang);
   $destLang = $gltr_engine->decode_lang_code($destLang);
