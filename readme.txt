@@ -5,7 +5,7 @@ Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.3
 Tested up to: 2.6
-Stable Tag: 1.0.5
+Stable Tag: 1.0.6
 
 Automatically translates your blog in fourteen different languages!
 
@@ -39,7 +39,7 @@ http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 
 How to upgrade
 
-If upgrading from 0.9 or higher, just overwrite the previous version, otherwise uninstall the previous 
+If upgrading from 0.9 or higher, just overwrite the previous version (don't delete the "cache" directory!!), otherwise uninstall the previous 
 version and follow the Installation instructions.
 
 == Configuration ==

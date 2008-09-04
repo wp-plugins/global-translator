@@ -3,11 +3,13 @@ require_once (dirname(__file__).'/header.php');
 $gltr_stale_size = 0;
 $gltr_cache_size = 0;
 $gltr_cached_files_num = 0;
+$gltr_stale_files_num = 0;
 
 function gltr_init_info(){
 	global $gltr_stale_size;
 	global $gltr_cache_size;
 	global $gltr_cached_files_num;
+	global $gltr_stale_files_num;
 	//cachedir
   $dir = dirname(__FILE__) . '/cache';
   if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
@@ -30,6 +32,7 @@ function gltr_init_info(){
         $path = $dir.'/'.$item;
         if (file_exists($path) && is_file($path))
         	$gltr_stale_size += filesize($path);
+        	$gltr_stale_files_num++;
       }
     }
 	  closedir($handle);	
@@ -51,18 +54,6 @@ function gltr_get_last_cached_file_time(){
 
 load_plugin_textdomain('gltr'); // NLS
 
-/*Lets add some default options if they don't exist*/
-add_option('gltr_base_lang', 'en');
-add_option('gltr_col_num', '0');
-add_option('gltr_html_bar_tag', 'TABLE');
-add_option('gltr_my_translation_engine', 'google');
-add_option('gltr_preferred_languages', array());
-add_option('gltr_ban_prevention', true);
-add_option('gltr_enable_debug', false);
-add_option('gltr_conn_interval',300);
-add_option('gltr_sitemap_integration',false);
-add_option("gltr_last_connection_time",0);
-add_option("gltr_translation_status","unknown");
 	
 	
 $location = get_option('siteurl') . '/wp-admin/admin.php?page=global-translator/options-translator.php'; // Form Action URI
@@ -78,6 +69,7 @@ if (isset($_POST['stage'])){
 	$gltr_html_bar_tag 					= $_POST['gltr_html_bar_tag'];
 	$gltr_my_translation_engine = $_POST['gltr_my_translation_engine'];
 	$gltr_conn_interval 				= $_POST['gltr_conn_interval'];
+	$gltr_cache_expire_time 		= $_POST['gltr_cache_expire_time'];
 	
 
 	if (isset($_POST['gltr_preferred_languages']))
@@ -147,6 +139,12 @@ if (isset($_POST['stage'])){
 	      if (!is_numeric($conn_int))$conn_int = 300;
 	      update_option('gltr_conn_interval', $conn_int);
 				$gltr_conn_interval = $conn_int;
+				
+	      $exp_time = $_POST['gltr_cache_expire_time'];
+	      if (!is_numeric($exp_time))$exp_time = 30;
+	      update_option('gltr_cache_expire_time', $exp_time);
+				$gltr_cache_expire_time = $exp_time;
+				
 	
 	      if(isset($_POST['gltr_ban_prevention']))
 	        update_option('gltr_ban_prevention', true);
@@ -183,6 +181,7 @@ if (isset($_POST['stage'])){
 	
 	$gltr_enable_debug = get_option('gltr_enable_debug');
 	$gltr_conn_interval = get_option('gltr_conn_interval');
+	$gltr_cache_expire_time = get_option('gltr_cache_expire_time');
 
 
 	$gltr_current_engine = $gltr_available_engines[$gltr_my_translation_engine];
@@ -384,7 +383,7 @@ if($message!="") { ?>
       <tr><td>
         <label><input type="radio" onclick="document.forms['form1'].stage.value='change';document.forms['form1'].submit();" 
           <?php if($gltr_my_translation_engine == 'babelfish') {?> checked <?php } ?> name="gltr_my_translation_engine" 
-            value="babelfish">&nbsp;<?php _e('Altavista Babel Fish(at now it is just a redirect)') ?>
+            value="babelfish">&nbsp;<?php _e('Altavista Babel Fish') ?>
         </label>
       </td></tr>
       <tr><td>
@@ -458,18 +457,24 @@ if($message!="") { ?>
   		<h3><?php _e('Cache management') ?></h3>
   		<table width="100%" cellpadding="5" class="editform">
   		<tr><td>
-        <label>
+        
 	        	Global Translator uses a fast, smart, optimized, self-cleaning and built-in caching system in order to drastically reduce the connections to the translation engines.
 						This feature cannot be optional and is needed in order to prevent from banning by the translation services. For the same reason the translation process will not be 
 						immediate and the full translation of the blog could take a while: this is because by default only a translation request every 5 minutes will be allowed (see next section). 
 	        	<br /> 
 	        	The cache invalidation will be automatically (and smartly) handled when a post is created, deleted or updated.
+	        	<br/><br/>
+	        	Schedule a page for a new translation if it has been cached more than 
+	        		<input size="4"  maxlength="5" name="gltr_cache_expire_time" type="text" id="gltr_cache_expire_time" value="<?php echo($gltr_cache_expire_time);?>"/> days ago ("0" means "never").
 	        	<br/>
-	        	<strong>Your cache dir currently contains <?php echo($gltr_cached_files_num)?> successfully translated and cached pages.</strong><br />
-	        	<strong>Cache dir size</strong>: <?php $size=round($gltr_cache_size/1024,1); echo ($size);?> KB<br/>
-	        	<strong>Stale dir size</strong>: <?php $size=round($gltr_stale_size/1024,1); echo ($size);?> KB<br/>
-	        	
-        </label>
+	        	<h4>Cache statistics</h4>
+	        	<ul>
+	        	<li>Your cache directory currently contains <strong><?php echo($gltr_cached_files_num)?></strong> successfully translated and cached pages.</li>
+	        	<li><strong>Cache directory size</strong>: <?php $size=round($gltr_cache_size/1024/1024,1); echo ($size);?> MB</li>
+	        	<li>Your stale directory currently contains <strong><?php echo($gltr_stale_files_num)?></strong> successfully translated and cached pages waiting for a new translation.</li>
+	        	<li><strong>Stale directory size</strong>: <?php $size=round($gltr_stale_size/1024/1024,1); echo ($size);?> MB</li>
+	        	</ul>
+        
       </td></tr>
   		<tr><td>
         <label>

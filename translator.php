@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.5
+Version: 1.0.6
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -65,6 +65,9 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.0.6
+- Added new optional cache invalidation time based parameter
 
 1.0.5
 - Random User Agent selection for translation requests
@@ -210,6 +213,7 @@ define('BAN_PREVENTION', get_option('gltr_ban_prevention'));
 define('HTML_BAR_TAG', get_option('gltr_html_bar_tag'));
 define('TRANSLATION_ENGINE', get_option('gltr_my_translation_engine'));
 define('SITEMAP_INTEGRATION', get_option('gltr_sitemap_integration'));
+define('EXPIRE_TIME', get_option('gltr_cache_expire_time'));
 define('BLOG_URL', get_settings('siteurl'));
 define('BLOG_HOME', get_settings('home'));
 define('BLOG_HOME_ESCAPED', str_replace('/', '\\/', BLOG_HOME));
@@ -298,20 +302,29 @@ function gltr_add_translated_pages_to_sitemap() {
 
 function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
   global $gltr_engine;
-  if ($gltr_engine->get_name() == 'google'){
+  if (TRANSLATION_ENGINE == 'google'){
   	$urlToTransl = str_replace(array('?','='),array('%3F','%3D'),$urlToTransl);
-  }
+  }else if (TRANSLATION_ENGINE == 'babelfish'){	
+		$urlToTransl = urlencode($urlToTransl);   
+	}
   $tokens = array('${URL}', '${SRCLANG}', '${DESTLANG}');
   $srcLang = $gltr_engine->decode_lang_code($srcLang);
   $destLang = $gltr_engine->decode_lang_code($destLang);
   $values = array($urlToTransl, $srcLang, $destLang);
   $res = str_replace($tokens, $values, $gltr_engine->get_base_url());
-  if ($gltr_engine->get_name() == 'google'){
+  if (TRANSLATION_ENGINE == 'google'){
     gltr_debug("Google Patch: calling: $res");
     $maincont = gltr_http_get_content( $res);
-
 		$matches = array();
 		preg_match( '/(http:\/\/[0-9\.]*\/translate_c[^"]*)"/',$maincont,$matches);
+		$res = $matches[1];
+		$res = str_replace('&amp;','&', $res);    
+		
+	} else if (TRANSLATION_ENGINE == 'babelfish'){
+    gltr_debug("Babelfish Patch: calling: $res");
+    $maincont = gltr_http_get_content( $res);
+		$matches = array();
+		preg_match( '/URL=(http:\/\/[0-9\.]*\/babelfish\/translate_url_content[^"]*)"/',$maincont,$matches);
 		$res = $matches[1];
 		$res = str_replace('&amp;','&', $res);    
 	}
@@ -480,7 +493,7 @@ function gltr_clean_translated_page($buf, $lang) {
   global $gltr_engine;
 
   //Clean the links modified by the translation engine
-  //$buf = urldecode ($buf);
+  $buf = urldecode ($buf);
 	
 	$patterns = $gltr_engine->get_links_pattern();
 	foreach( $patterns as $id => $pattern){
@@ -488,9 +501,9 @@ function gltr_clean_translated_page($buf, $lang) {
   }
   
   //TODO: test other engines and remove this!
-  if (TRANSLATION_ENGINE != 'google') {
-  	$buf = urldecode($buf);
-	}
+  //if (TRANSLATION_ENGINE != 'google') {
+  //$buf = urldecode($buf);
+	//}
 	
   $buf = preg_replace("/<meta name=([\"|']{1})description([\"|']{1})[^>]*>/i", "", $buf);
 	//TODO: add <meta name="language" content="LANG" />
@@ -855,6 +868,14 @@ function gltr_get_page_content($lang, $url) {
       $from_cache = false;
     } else {
  			$from_cache = true;
+ 			//check if needs to be scheduled for a new translation
+ 			$filetime_days = (time() - filemtime($filename)) / 86400;
+			//gltr_debug("The file $filename has been created $filetime_days days ago. ");
+ 			
+ 			if (EXPIRE_TIME > 0 && $filetime_days >= EXPIRE_TIME ){
+ 				gltr_debug("The file $filename has been created more than " . EXPIRE_TIME . " days ago. Scheduling for a new translation");
+ 				gltr_move_cached_file_to_stale($hash);
+ 			}
 		}
   } 
 
@@ -893,10 +914,11 @@ function gltr_get_page_content($lang, $url) {
 }
 
 function gltr_hashReqUri($uri) {
-    $req = preg_replace('/(.*)\/$/', '\\1', $uri);
-    $req = preg_replace('/#.*$/', '', $req);
-    $hash = str_replace(array('?','<','>',':','\\','/','*','|','"'), '_', $req);
-    return $hash;
+	$uri = urldecode($uri);//Adde
+  $req = preg_replace('/(.*)\/$/', '\\1', $uri);
+  $req = preg_replace('/#.*$/', '', $req);
+  $hash = str_replace(array('?','<','>',':','\\','/','*','|','"'), '_', $req);
+  return $hash;
 }
 
 function gltr_filter_content($content) {
@@ -976,7 +998,23 @@ function gltr_debug($msg) {
 
 function gltr_not_translable_uri(){
 	
-  $not_translable = array("share-this");
+  $not_translable = array("share-this","download.php");
+  $url = gltr_get_self_url();
+  if (isset($url))
+    $url = strtolower($url);
+  else
+    $url = "";
+  if ($url == "") {
+    return false;
+  } else {
+    while (list($key, $val) = each($not_translable)) {
+      if (strstr($url, strtolower($val))) {
+        gltr_debug("Detected and blocked untranslable uri: $url");
+        return true;
+      }
+    }
+  }  
+/*
   if (isset($_SERVER['QUERY_STRING']))
     $uri = strtolower($_SERVER['QUERY_STRING']);
   else
@@ -990,7 +1028,7 @@ function gltr_not_translable_uri(){
         return true;
       }
     }
-  }
+  }*/
   return false;
 }
 

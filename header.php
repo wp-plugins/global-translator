@@ -1107,5 +1107,20 @@ $gltr_available_engines['promt'] = $promtEngine;
 $gltr_available_engines['babelfish'] = $babelfishEngine;
 $gltr_available_engines['freetransl'] = $freetranslationEngine;
 
-$gltr_VERSION='1.0.5';
+$gltr_VERSION='1.0.6';
+
+/*Lets add some default options if they don't exist*/
+add_option('gltr_base_lang', 'en');
+add_option('gltr_col_num', '0');
+add_option('gltr_html_bar_tag', 'TABLE');
+add_option('gltr_my_translation_engine', 'google');
+add_option('gltr_preferred_languages', array());
+add_option('gltr_ban_prevention', true);
+add_option('gltr_enable_debug', false);
+add_option('gltr_conn_interval',300);
+add_option('gltr_sitemap_integration',false);
+add_option("gltr_last_connection_time",0);
+add_option("gltr_translation_status","unknown");
+add_option("gltr_cache_expire_time",30);
+
 ?>
