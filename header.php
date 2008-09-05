@@ -1107,7 +1107,7 @@ $gltr_available_engines['promt'] = $promtEngine;
 $gltr_available_engines['babelfish'] = $babelfishEngine;
 $gltr_available_engines['freetransl'] = $freetranslationEngine;
 
-$gltr_VERSION='1.0.6';
+$gltr_VERSION='1.0.7dev';
 
 /*Lets add some default options if they don't exist*/
 add_option('gltr_base_lang', 'en');

@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.6
+Version: 1.0.7dev
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -505,7 +505,8 @@ function gltr_clean_translated_page($buf, $lang) {
   //$buf = urldecode($buf);
 	//}
 	
-  $buf = preg_replace("/<meta name=([\"|']{1})description([\"|']{1})[^>]*>/i", "", $buf);
+  $buf = preg_replace("/<meta name=\"description\"([ ]*)content=\"([^>]*)\"([ ]*)\/>/i", "", $buf);
+  $buf = preg_replace("/<meta name='description'([ ]*)content='([^>]*)'([ ]*)\/>/i", "", $buf);
 	//TODO: add <meta name="language" content="LANG" />
   if (REWRITEON) {
   	//$pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
