@@ -2,8 +2,8 @@
 /*
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
-Description: Automatically translates a blog in fourteen different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.7dev
+Description: Automatically translates a blog in 34 different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian,...) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
+Version: 1.0.7
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 /* Credits:
-Special thanks also to Jason F. Irwin, Ibnu Asad, Ozh, ttancm, Fable, Satollo and the many others who have provided feedback, spotted bugs, and suggested improvements.
+Special thanks also to Jason F. Irwin, Ibnu Asad, Ozh, ttancm, Fable, Satollo, Nick Georgakis and the many others who have provided feedback, spotted bugs, and suggested improvements.
 */
 
 /* *****INSTRUCTIONS*****
@@ -66,6 +66,12 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 Change Log
 
+1.0.7
+- Added cache compression
+- fixed layout bugs
+- fixed link building problem (internal anchors not working)
+- Added 11 new languages to Google Translation Engine!
+ 
 1.0.6
 - Added new optional cache invalidation time based parameter
 
@@ -194,15 +200,16 @@ Change Log
 
 require_once (dirname(__file__).'/header.php');
 
+	
 define('HARD_CLEAN', true);
 
 define('FLAG_BAR_BEGIN', '<!--FLAG_BAR_BEGIN-->');
 define('FLAG_BAR_END', '<!--FLAG_BAR_END-->');
-//define('USER_AGENT','Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)');
 define('USER_AGENT','Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.2.1) Gecko/20021204');
-define('LANGS_PATTERN', 'it|ko|zh-CN|pt|en|de|fr|es|ja|ar|ru|el|nl|zh|zt|no|bg|cs|hr|da|fi|hi|pl|ro|sv');
-define('LANGS_PATTERN_WITH_SLASHES', '/it/|/ko/|/zh-CN/|/pt/|/en/|/de/|/fr/|/es/|/ja/|/ar/|/ru/|/el/|/nl/|/zh/|/zt/|/no/|/bg/|/cs/|/hr/|/da/|/fi/|/hi/|/pl/|/ro/|/sv/');
-define('LANGS_PATTERN_WITHOUT_FINAL_SLASH', '/it|/ko|/zh-CN|/pt|/en|/de|/fr|/es|/ja|/ar|/ru|/el|/nl|/zh|/zt|/no|/bg|/cs|/hr|/da|/fi|/hi|/pl|/ro|/sv');
+
+define('LANGS_PATTERN', 'it|ko|zh-CN|pt|en|de|fr|es|ja|ar|ru|el|nl|zh|zt|no|bg|cs|hr|da|fi|hi|pl|ro|sv|ca|tl|iw|id|lv|lt|sr|sk|sl|uk|vi');
+define('LANGS_PATTERN_WITH_SLASHES', '/it/|/ko/|/zh-CN/|/pt/|/en/|/de/|/fr/|/es/|/ja/|/ar/|/ru/|/el/|/nl/|/zh/|/zt/|/no/|/bg/|/cs/|/hr/|/da/|/fi/|/hi/|/pl/|/ro/|/sv/|/ca/|/tl/|/iw/|/id/|/lv/|/lt/|/sr/|/sk/|/sl/|/uk/|/vi/');
+define('LANGS_PATTERN_WITHOUT_FINAL_SLASH', '/it|/ko|/zh-CN|/pt|/en|/de|/fr|/es|/ja|/ar|/ru|/el|/nl|/zh|/zt|/no|/bg|/cs|/hr|/da|/fi|/hi|/pl|/ro|/sv|/ca|/tl|/iw|/id|/lv|/lt|/sr|/sk|/sl|/uk|/vi');
 
 
 define('CONN_INTERVAL', get_option('gltr_conn_interval'));
@@ -214,6 +221,7 @@ define('HTML_BAR_TAG', get_option('gltr_html_bar_tag'));
 define('TRANSLATION_ENGINE', get_option('gltr_my_translation_engine'));
 define('SITEMAP_INTEGRATION', get_option('gltr_sitemap_integration'));
 define('EXPIRE_TIME', get_option('gltr_cache_expire_time'));
+define('COMPRESS_CACHE', get_option('gltr_compress_cache'));
 define('BLOG_URL', get_settings('siteurl'));
 define('BLOG_HOME', get_settings('home'));
 define('BLOG_HOME_ESCAPED', str_replace('/', '\\/', BLOG_HOME));
@@ -229,7 +237,7 @@ add_action('init', 'gltr_translator_init');
 
 add_action('save_post', 'gltr_erase_common_cache_files');
 add_action('delete_post', 'gltr_erase_common_cache_files');
-add_action('comment_post', 'gltr_erase_common_cache_files');
+//add_action('comment_post', 'gltr_erase_common_cache_files');
 //add_action('publish_phone', 'gltr_erase_common_cache_files');
 //add_action('trackback_post', 'gltr_erase_common_cache_files');
 //add_action('pingback_post', 'gltr_erase_common_cache_files');
@@ -404,7 +412,7 @@ function gltr_http_get_content($resource) {
 
     $req = gltr_build_request($host, $http_q);
 				
-    $fp = @fsockopen($host, $port, $errno, $errstr, 60);
+    $fp = @fsockopen($host, $port, $errno, $errstr);
 
     if (!$fp) {
       return "$errstr ($errno)<br />\n";
@@ -489,37 +497,39 @@ function gltr_is_connection_allowed(){
 	return $res;
 }
 
+function gltr_clean_link($matches){
+  //global $wp_query;
+  //$lang = $wp_query->query_vars['lang'];
+  if (TRANSLATION_ENGINE == 'google')
+		return "href=\"" . urldecode($matches[1]) . $matches[3] . "\"";
+	else if (TRANSLATION_ENGINE == 'promt')
+		return "href=\"" . urldecode($matches[1]) . "\"";
+	else 
+		return "href=\"" . urldecode($matches[1]) . "\"";
+}
+
 function gltr_clean_translated_page($buf, $lang) {
   global $gltr_engine;
-
-  //Clean the links modified by the translation engine
-  $buf = urldecode ($buf);
-	
+  
 	$patterns = $gltr_engine->get_links_pattern();
 	foreach( $patterns as $id => $pattern){
-  	$buf = preg_replace($pattern, $gltr_engine->get_links_replacement(), $buf);
+  	$buf = preg_replace_callback($pattern, "gltr_clean_link", $buf);
   }
-  
-  //TODO: test other engines and remove this!
-  //if (TRANSLATION_ENGINE != 'google') {
-  //$buf = urldecode($buf);
-	//}
 	
   $buf = preg_replace("/<meta name=\"description\"([ ]*)content=\"([^>]*)\"([ ]*)\/>/i", "", $buf);
   $buf = preg_replace("/<meta name='description'([ ]*)content='([^>]*)'([ ]*)\/>/i", "", $buf);
 	//TODO: add <meta name="language" content="LANG" />
   if (REWRITEON) {
-  	//$pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback\/)(?!\/feed\/).)*)\"([^>]*)>/i";
-    $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
-  	$repl = "<a href=\"" . BLOG_HOME . '/' . $lang . "\\1\" \\5>";
+    $pattern = "/<a([^>]*)href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
+  	$repl = "<a\\1href=\"" . BLOG_HOME . '/' . $lang . "\\2\" \\7>";
     $buf = preg_replace($pattern, $repl, $buf);
   } else {
-    $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "\/\?(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
-    $repl = "<a href=\"" . BLOG_HOME . "?\\1&lang=$lang\" \\5>";
+    $pattern = "/<a([^>]*)href=\"" . BLOG_HOME_ESCAPED . "\/\?(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
+    $repl = "<a\\1href=\"" . BLOG_HOME . "?\\2&lang=$lang\" \\7>";
     $buf = preg_replace($pattern, $repl, $buf);
     
-    $pattern = "/<a[^>]*href=\"" . BLOG_HOME_ESCAPED . "[\/]{0,1}\"([^>]*)>/i";
-    $repl = "<a href=\"" . BLOG_HOME . "?lang=$lang\" \\1>";
+    $pattern = "/<a([^>]*)href=\"" . BLOG_HOME_ESCAPED . "[\/]{0,1}\"([^>]*)>/i";
+    $repl = "<a\\1href=\"" . BLOG_HOME . "?lang=$lang\" \\2>";
     $buf = preg_replace($pattern, $repl, $buf);
   }
 
@@ -570,7 +580,7 @@ function gltr_clean_translated_page($buf, $lang) {
 			$currPos = $tagClosePos;
 		}
 		//gltr_debug($result);
-		$buf = $result;
+		$buf = $result . substr($buf,$beginIdx);//Fixed by adding the last part of the translation: thanks Nick Georgakis!
 	}
   
   $buf = gltr_insert_flag_bar($buf);
@@ -854,8 +864,8 @@ function gltr_get_page_content($lang, $url) {
   if (file_exists($filename) && filesize($filename) > 0) {
     // We are done, just return the file and exit
     gltr_debug("cache: returning cached version ($hash) for url:" . gltr_get_self_url());
-    
-    $page = file_get_contents($filename);
+    $page = gltr_load_cached_page($filename);
+
     $page .= "<!--CACHED VERSION ($hash)-->";
     
     $page = gltr_insert_flag_bar($page);
@@ -888,14 +898,8 @@ function gltr_get_page_content($lang, $url) {
 		if (gltr_is_valid_translated_content($page)) {
 			$gltr_last_cached_url = gltr_get_self_url();
       gltr_debug("cache: caching ($filename) [".strlen($page)."] url:" . $gltr_last_cached_url);
-      $handle = fopen($filename, "wb");
-      if (flock($handle, LOCK_EX)) { // do an exclusive lock
-        fwrite($handle, $page); //write
-        flock($handle, LOCK_UN); // release the lock
-      } else {
-        fwrite($handle, $page); //Couldn't lock the file ! Try anyway to write but it is not a good thing
-      }
-      fclose($handle);
+      gltr_save_cached_page($page,$filename);
+
       $page .= "<!--NOT CACHED VERSION: ($hash)-->";
       if (file_exists($stale_filename)){
       	unlink($stale_filename);
@@ -904,7 +908,8 @@ function gltr_get_page_content($lang, $url) {
     	//translation not available. Switching to stale
 	    if (file_exists($stale_filename) && filesize($stale_filename) > 0) {
 	      gltr_debug("cache: returning stale version ($hash) for url:" . gltr_get_self_url());
-	      $page = file_get_contents($stale_filename);
+
+	      $page = gltr_load_cached_page($stale_filename);
 	      $page .= "<!--STALE VERSION: ($hash)-->";
 	 			$from_cache = true;
 	    }
@@ -912,6 +917,45 @@ function gltr_get_page_content($lang, $url) {
   }
   
   return $page;
+}
+
+function gltr_save_cached_page($data,$filename){
+	//gltr_debug("gltr_save_cached_page: Cache compression enabled = " . COMPRESS_CACHE);
+
+	if (COMPRESS_CACHE && function_exists('gzcompress')){
+		gltr_debug("gltr_save_cached_page: using zlib: $filename");
+		$data = gzcompress($data, 9);
+	} else {
+		gltr_debug("gltr_save_cached_page: NOT using zlib: $filename");
+	} 
+  $handle = fopen($filename, "wb");
+  if (flock($handle, LOCK_EX)) { // do an exclusive lock
+    fwrite($handle, $data); //write
+    flock($handle, LOCK_UN); // release the lock
+  } else {
+    fwrite($handle, $data); 
+  }
+  fclose($handle);
+}
+
+function gltr_load_cached_page($filename){
+	//gltr_debug("gltr_load_cached_page: Cache compression enabled = " . COMPRESS_CACHE);
+	$data = file_get_contents($filename);
+	
+	if (function_exists('gzuncompress')){
+		if (($tmp = @gzuncompress($data))){
+			$data = $tmp;
+			if (!COMPRESS_CACHE){
+				//save the unzipped version
+				gltr_save_cached_page($data,$filename);
+			}
+		} else if (COMPRESS_CACHE) {
+			//save the zipped version
+			gltr_save_cached_page(file_get_contents($filename),$filename);
+		}
+		
+	}
+	return $data;
 }
 
 function gltr_hashReqUri($uri) {
@@ -933,7 +977,7 @@ function gltr_insert_my_rewrite_query_vars($vars) {
 }
 
 function gltr_insert_my_rewrite_parse_query($query) {
-  global $gltr_result;
+  $gltr_result = "";
 
   		
   
@@ -971,9 +1015,12 @@ function gltr_insert_my_rewrite_parse_query($query) {
 	    $gltr_result = gltr_get_page_content($lang, $url);
 		}
 		
-    ob_start('gltr_filter_content');
+		die($gltr_result);
+		
+    //ob_start('gltr_filter_content');
   	//$end = round(microtime(true),4);
   	//gltr_debug("Translated page serving total time:". ($end - $start) . " seconds");
+    //ob_end_flush();
     
   }
 }
@@ -992,7 +1039,7 @@ function gltr_debug($msg) {
     $myFile = dirname(__file__) . "/debug.log";
     $fh = fopen($myFile, 'a') or die("Can't open debug file. Please manually create the 'debug.log' file (inside the 'global-translator' directory) and make it writable.");
     $ua_simple = preg_replace("/(.*)\s\(.*/","\\1",$_SERVER['HTTP_USER_AGENT']);
-    fwrite($fh, $today . " [from: ".$_SERVER['REMOTE_ADDR']."|$ua_simple] - " . $msg . "\n");
+    fwrite($fh, $today . " [from: ".$_SERVER['REMOTE_ADDR']."|$ua_simple] - [mem:" . memory_get_usage() . "] " . $msg . "\n");
     fclose($fh);
   }
 }
@@ -1205,11 +1252,11 @@ function gltr_erase_common_cache_files($post_ID) {
     		gltr_delete_empty_cached_file($item);
     		$donext = true;
 				foreach($patterns as $pattern) { 
-			    if(strstr($item, $pattern)){
-        		gltr_move_cached_file_to_stale($item);
-        		$donext = false;
-        		break;
-			    }
+          if(strstr($item, $pattern)){
+            gltr_move_cached_file_to_stale($item);
+            $donext = false;
+            break;
+          }
 				} 
 				if ($donext){
 		    	if (REWRITEON) {

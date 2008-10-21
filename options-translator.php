@@ -70,7 +70,6 @@ if (isset($_POST['stage'])){
 	$gltr_my_translation_engine = $_POST['gltr_my_translation_engine'];
 	$gltr_conn_interval 				= $_POST['gltr_conn_interval'];
 	$gltr_cache_expire_time 		= $_POST['gltr_cache_expire_time'];
-	
 
 	if (isset($_POST['gltr_preferred_languages']))
 		$gltr_preferred_languages = $_POST['gltr_preferred_languages'];
@@ -89,6 +88,12 @@ if (isset($_POST['stage'])){
 		$gltr_sitemap_integration = true; 
 	else 
 		$gltr_sitemap_integration = false;
+	
+	if(isset($_POST['gltr_compress_cache'])) 
+		$gltr_compress_cache = true; 
+	else 
+		$gltr_compress_cache = false;
+	
 	
 	
 	if ('change' == $_POST['stage']) {
@@ -156,6 +161,10 @@ if (isset($_POST['stage'])){
 	      else
 	        update_option('gltr_sitemap_integration', false);
 
+	      if(isset($_POST['gltr_compress_cache']))
+	        update_option('gltr_compress_cache', true);
+	      else
+	        update_option('gltr_compress_cache', false);
 	
 	
 	      if(isset($_POST['gltr_enable_debug']))
@@ -178,6 +187,7 @@ if (isset($_POST['stage'])){
 	$gltr_preferred_languages = get_option('gltr_preferred_languages');
 	$gltr_ban_prevention = get_option('gltr_ban_prevention');
 	$gltr_sitemap_integration = get_option('gltr_sitemap_integration');
+	$gltr_compress_cache = get_option('gltr_compress_cache');
 	
 	$gltr_enable_debug = get_option('gltr_enable_debug');
 	$gltr_conn_interval = get_option('gltr_conn_interval');
@@ -464,6 +474,13 @@ if($message!="") { ?>
 	        	<br /> 
 	        	The cache invalidation will be automatically (and smartly) handled when a post is created, deleted or updated.
 	        	<br/><br/>
+	        	<?php if (function_exists('gzcompress')){?>
+	        	<label><input name="gltr_compress_cache" type="checkbox" id="gltr_compress_cache"  
+	        	<?php if($gltr_compress_cache == TRUE) {?> checked="checked" <?php } ?> /> Enable cache compression (this will strongly decrease the disk space but could give some problems on certain hosts)</label>
+						<?php } else {?>
+							<input name="gltr_compress_cache" disabled="true" type="checkbox" id="gltr_compress_cache"/> Unable to provide cache compression feature: ZLIB not available on you php installation.</label>
+						<?php }?>
+	        	<br/><br/>
 	        	Schedule a page for a new translation if it has been cached more than 
 	        		<input size="4"  maxlength="5" name="gltr_cache_expire_time" type="text" id="gltr_cache_expire_time" value="<?php echo($gltr_cache_expire_time);?>"/> days ago ("0" means "never").
 	        	<br/>
@@ -572,9 +589,9 @@ if($message!="") { ?>
 	        	<br /><br />
 	        	By enabling this option, Global Translator will automatically provide the translated urls to the "<strong>Google XML Sitemaps Generator for WordPress</strong>" plugin.<br />
 						After the next sitemap rebuild, all the translated urls will be added to your sitemap.xml file.<br />
-						This feature could make the sitemap generation process slow (a lot of urls could be added): I strongly suggest you to 
+						This feature could make the sitemap generation process very slow and could require a lot of system resources (a lot of urls could be added): I strongly suggest you to 
 						enable the <strong>"Build the sitemap in a background process"</strong> option from the "<strong>Google XML Sitemaps Generator for WordPress</strong>" 
-						admin page, otherwise the post saving/publishing actions could become very slow.
+						admin page, otherwise the post saving/publishing actions could become unresponsive.
         
       <?php
       } else {?>

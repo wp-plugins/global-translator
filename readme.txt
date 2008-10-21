@@ -5,15 +5,18 @@ Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.3
 Tested up to: 2.6
-Stable Tag: 1.0.6
+Stable Tag: 1.0.7
 
 Automatically translates your blog in fourteen different languages!
 
 == Description ==
 
-Global Translator automatically translates your blog in the following fourteen different languages:
-English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, 
-Greek, Dutch and Norwegian.
+Global Translator automatically translates your blog in the following 34 different languages:
+Italian, Korean, Chinese (Simplified), Portuguese, English, German, French, Spanish, Japanese, 
+Arabic, Russian, Greek, Dutch, Bulgarian, Czech, Croatian, Danish, Finnish, Hindi, Polish, Romanian, 
+Swedish, Norwegian, Catalan, Filipino, Hebrew, Indonesian, Latvian, Lithuanian, Serbian, Slovak, 
+Slovenian, Ukrainian, Vietnamese'.
+
 The number of available translations will depend on your blog language and the translation engine you will chose to use.
 Main features:
 
@@ -25,6 +28,8 @@ Main features:
 * Fully configurable layout: you can easily customize the appearance of the translation bar by choosing between a TABLE 
 	or DIV layout for the flags bar and by selecting the number of translations to make available to your visitors 
 * No database modifications: Global Translator is not intrusive. It doesn't create or alter any table on your database: this feature permits to obtain better performances.
+
+Global Translator is a real traffic booster for your blog!
 
 For the latest information and changelog visit the website
 
@@ -40,7 +45,7 @@ http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 How to upgrade
 
 If upgrading from 0.9 or higher, just overwrite the previous version (don't delete the "cache" directory!!), otherwise uninstall the previous 
-version and follow the Installation instructions.
+version and follow the Installation instructions; don't use the automatic upgrade feature or your cache will be erased!
 
 == Configuration ==
 
@@ -54,6 +59,13 @@ After this simple operation, a bar containing the flags that represents all the 
 for your language will appear on your blog.
 
 == Frequently Asked Questions ==
+
+= "This page has not been translated yet. The translation process could take a while: please come back later." message when trying to access a translated page =
+
+In order to prevent from banning by the translation services, only a translation request every 5 minutes will be allowed. This will permit to fully translate
+your blog whithout any interruption; this message will completely disappear when all the pages of your blog will be cached.
+Remember that this message will also appear if you're currently being banned by the translation engine: this could happen if for example your blog shares the
+same ip address with other blogs using older versions of Global Translator.
 
 = I have a Global Translator version prior than 1.0.5 and Google doesn't translate anymore! =
 
@@ -71,13 +83,6 @@ If you discover a conflicting plugin please send me an email (davide at nothing2
 
 You're using an old version of the plugin. Please upgrade to 1.0 or later.
 
-= "This page has not been translated yet. The translation process could take a while: please come back later." message when trying to access a translated page =
-
-In order to prevent from banning by the translation services, only a translation request every 5 minutes will be allowed. This will permit to fully translate
-your blog whithout any interruption; this message will completely disappear when all the pages of your blog will be cached.
-Remember that this message will also appear if you're currently being banned by the translation engine: this could happen if for example your blog shares the
-same ip address with other blogs using older versions of Global Translator.
-
 = The translated page has a bad/broken layout =
 
 This is due to the translation engine action. I cannot do anything in order to prevent this problem :-)
@@ -87,7 +92,8 @@ I suggest you to try all the translation engines in order to choose the best one
 
 In general this just requires that you replace the existing files with the new ones. Sometimes its a good idea to delete all 
 the files in wp-content/plugins/global-translator/ and re-upload them fresh, but if you're upgrading from version 0.9 or later you 
-should consider to maintain the cache dir, otherwise all the already translated pages will be lost.
+should consider to maintain the cache dir, otherwise all the already translated pages will be lost. 
+Anyway, don't use automatic upgrade or your cached and translated pages will be erased!
 
 = I've just changed my permalinks structure or just upgraded Wordpress to a newer version and Global Translator doesn't translate anymore =
 
