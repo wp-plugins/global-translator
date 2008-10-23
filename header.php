@@ -1784,5 +1784,5 @@ if (function_exists('gzcompress')){
 } else {
 	add_option("gltr_compress_cache",false);
 }
-$gltr_VERSION='1.0.7';
+$gltr_VERSION='1.0.7.1';
 ?>
