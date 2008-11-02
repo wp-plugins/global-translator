@@ -1,11 +1,11 @@
 === Global Translator ===
 Tags: translator, multilanguage, automatic translator, google translations, babelfish, promt, freetranslations, widget
 Author: Davide Pozza
-Contributors: 
+Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.3
 Tested up to: 2.6
-Stable Tag: 1.0.7.1
+Stable Tag: 1.0.8
 
 Automatically translates your blog in fourteen different languages!
 
@@ -20,16 +20,18 @@ Slovenian, Ukrainian, Vietnamese'.
 The number of available translations will depend on your blog language and the translation engine you will chose to use.
 Main features:
 
-* Four different translation engines: Google Translation Engine, Babel Fish, Promt, FreeTranslations
-* Search Engine Optimized: it uses the permalinks by adding the language code at the beginning of all your URI. 
+* **Four different translation engines**: Google Translation Engine, Babel Fish, Promt, FreeTranslations
+* **Search Engine Optimized**: it uses the permalinks by adding the language code at the beginning of all your URI. 
 	For example the english version on www.domain.com/mycategory/mypost will be automatically transformed in 
 	www.domain.com/en/mycategory/mypost 
-* Fast Caching System: new fast, smart, optimized, self-cleaning and built-in caching system. Drastically reduction of the risk of temporarily ban from translation engines. 
-* Fully configurable layout: you can easily customize the appearance of the translation bar by choosing between a TABLE 
+* **Fast Caching System**: new fast, smart, optimized, self-cleaning and built-in caching system. Drastically reduction of the risk of temporarily ban from translation engines. 
+* **Fully configurable layout**: you can easily customize the appearance of the translation bar by choosing between a TABLE 
 	or DIV layout for the flags bar and by selecting the number of translations to make available to your visitors 
-* No database modifications: Global Translator is not intrusive. It doesn't create or alter any table on your database: this feature permits to obtain better performances.
+* **No database modifications**: Global Translator is not intrusive. It doesn't create or alter any table on your database: this feature permits to obtain better performances.
 
-Global Translator is a real traffic booster for your blog!
+**Global Translator is the first real (and free) traffic booster for your blog!**
+It can help you to reach a lot of new users and consequently to strongly increase your popularity: if you derive some benefits and if you want to support the development, 
+please consider to support me with a donation.
 
 For the latest information and changelog visit the website
 
@@ -42,10 +44,14 @@ http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 3.	From the main menu choose "Options->Global Translator" and select 
 		your blog language and your preferred configuration options then select "Update Options".
 
-How to upgrade
+**How to upgrade**
 
 If upgrading from 0.9 or higher, just overwrite the previous version (don't delete the "cache" directory!!), otherwise uninstall the previous 
 version and follow the Installation instructions; don't use the automatic upgrade feature or your cache will be erased!
+
+Starting from 1.0.8 the cache directory has been moved outside the plugin directory in order to support the Wordpress automatic pluging update feature:
+the content of the previous existing cache (inside wp-content/plugins/global-translator/cache) will be automatically and progressively moved to the new 
+cache location (wp-content/gt-cache) but, if you want, you can manually change the cache location by using your ftp client or a shell access.
 
 == Configuration ==
 
@@ -60,12 +66,18 @@ for your language will appear on your blog.
 
 == Frequently Asked Questions ==
 
-= "This page has not been translated yet. The translation process could take a while: please come back later." message when trying to access a translated page =
+= The translation process takes a lot of time. Why? =
 
 In order to prevent from banning by the translation services, only a translation request every 5 minutes will be allowed. This will permit to fully translate
 your blog whithout any interruption; this message will completely disappear when all the pages of your blog will be cached.
 Remember that this message will also appear if you're currently being banned by the translation engine: this could happen if for example your blog shares the
 same ip address with other blogs using older versions of Global Translator.
+
+= "This page has not been translated yet. The translation process could take a while: please come back later." message when trying to access a translated page =
+
+Upgrade to 1.0.8 or later. Starting from 1.0.8, a browser asking for a not yet translated page will be warned and redirected in 5 seconds to the translation service 
+page in order to provide a temporary "backup service". Obviously, when the page is translated and saved on your cache directory, this redirection will disappear and
+the translated and cleaned page will be served by your blog.
 
 = I have a Global Translator version prior than 1.0.5 and Google doesn't translate anymore! =
 
@@ -87,13 +99,6 @@ You're using an old version of the plugin. Please upgrade to 1.0 or later.
 
 This is due to the translation engine action. I cannot do anything in order to prevent this problem :-)
 I suggest you to try all the translation engines in order to choose the best one for your blog layout
-
-= How do I upgrade Global Translator? =
-
-In general this just requires that you replace the existing files with the new ones. Sometimes its a good idea to delete all 
-the files in wp-content/plugins/global-translator/ and re-upload them fresh, but if you're upgrading from version 0.9 or later you 
-should consider to maintain the cache dir, otherwise all the already translated pages will be lost. 
-Anyway, don't use automatic upgrade or your cached and translated pages will be erased!
 
 = I've just changed my permalinks structure or just upgraded Wordpress to a newer version and Global Translator doesn't translate anymore =
 

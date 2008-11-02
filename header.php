@@ -1758,7 +1758,6 @@ $freetranslationEngine = new gltr_translation_engine(
   );
 
 $well_known_extensions =  array('swf','gif','jpg','jpeg','bmp','gz','zip','rar','tar','png','xls','doc','ppt','tiff','avi','mpeg','mp3','mov','mp4');
-
 $gltr_available_engines = array();
 $gltr_available_engines['google'] = $googleEngine;
 $gltr_available_engines['promt'] = $promtEngine;
@@ -1784,5 +1783,10 @@ if (function_exists('gzcompress')){
 } else {
 	add_option("gltr_compress_cache",false);
 }
-$gltr_VERSION='1.0.7.1';
+
+if( !defined('WP_CONTENT_DIR') ) define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content' );
+$gltr_cache_dir = WP_CONTENT_DIR . "/gt-cache";
+$gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
+
+$gltr_VERSION='1.0.8';
 ?>

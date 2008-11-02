@@ -10,32 +10,32 @@ function gltr_init_info(){
 	global $gltr_cache_size;
 	global $gltr_cached_files_num;
 	global $gltr_stale_files_num;
+	global $gltr_cache_dir;
+	global $gltr_stale_dir;
 	//cachedir
-  $dir = dirname(__FILE__) . '/cache';
+  $dir = $gltr_cache_dir;
   if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
-    $handle = opendir($dir);
-    while (FALSE !== ($item = readdir($handle))) {
+  	$files = glob($dir . '/*');
+		foreach($files as $item){
       if($item != '.' && $item != '..') {
-        $path = $dir.'/'.$item;
+        $path = $item;
         if (file_exists($path) && is_file($path))
         	$gltr_cache_size += filesize($path);
         	$gltr_cached_files_num++;
       }
     }
-	  closedir($handle);	
   }
-  $dir = dirname(__FILE__) . '/cache/stale';
+  $dir = $gltr_stale_dir;
   if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
-    $handle = opendir($dir);
-    while (FALSE !== ($item = readdir($handle))) {
+  	$files = glob($dir . '/*');
+		foreach($files as $item){
       if($item != '.' && $item != '..') {
-        $path = $dir.'/'.$item;
+        $path = $item;
         if (file_exists($path) && is_file($path))
         	$gltr_stale_size += filesize($path);
         	$gltr_stale_files_num++;
       }
     }
-	  closedir($handle);	
   }
 
 }
@@ -103,7 +103,7 @@ if (isset($_POST['stage'])){
 	} else if ('process' == $_POST['stage']){
 	  if(!empty($_POST["gltr_erase_cache"])) {
 	  	//Erase cache button pressed
-  	  $cachedir = dirname(__FILE__) . '/cache';
+  	  $cachedir = $gltr_cache_dir;
 	    if (file_exists($cachedir) && is_dir($cachedir) && is_readable($cachedir)) {
 	      $handle = opendir($cachedir);
 	      while (FALSE !== ($item = readdir($handle))) {
@@ -206,13 +206,13 @@ if (isset($_POST['stage'])){
 		update_option('gltr_preferred_languages', $gltr_preferred_languages);
 	}
 
-  $cachedir = dirname(__file__) . '/cache';
+  $cachedir = $gltr_cache_dir;
   
   $message = "";
   
-  if (!is_readable(dirname(__file__)) || !is_writable(dirname(__file__)) ){
+  if (!is_readable(WP_CONTENT_DIR) || !is_writable(WP_CONTENT_DIR) ){
     $message = "Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
-    <ul><li>".dirname(__file__)."</li></ul>";
+    <ul><li>".WP_CONTENT_DIR."</li></ul>";
   } else {
 	  if (!is_dir($cachedir)){
 	  	if(!mkdir($cachedir, 0777)){
@@ -225,7 +225,7 @@ if (isset($_POST['stage'])){
 	  } 
 	  
 	  if (is_dir($cachedir) && is_readable($cachedir) && is_writable($cachedir)){
-		  $staledir = dirname(__file__) . '/cache/stale';
+		  $staledir = $gltr_stale_dir;
 	  	if (!is_dir($staledir)){
 		  	if(!mkdir($staledir, 0777)){
 		      $message = "Unable to complete Global Translator initialization. Plese manually create and chmod 777 the following directory:
