@@ -16,24 +16,28 @@ function gltr_init_info(){
   $dir = $gltr_cache_dir;
   if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
   	$files = glob($dir . '/*');
-		foreach($files as $item){
-      if($item != '.' && $item != '..') {
-        $path = $item;
-        if (file_exists($path) && is_file($path))
-        	$gltr_cache_size += filesize($path);
-        	$gltr_cached_files_num++;
+    if (is_array($files)){
+      foreach($files as $item){
+        if($item != '.' && $item != '..') {
+          $path = $item;
+          if (file_exists($path) && is_file($path))
+            $gltr_cache_size += filesize($path);
+            $gltr_cached_files_num++;
+        }
       }
     }
   }
   $dir = $gltr_stale_dir;
   if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
   	$files = glob($dir . '/*');
-		foreach($files as $item){
-      if($item != '.' && $item != '..') {
-        $path = $item;
-        if (file_exists($path) && is_file($path))
-        	$gltr_stale_size += filesize($path);
-        	$gltr_stale_files_num++;
+    if (is_array($files)){
+      foreach($files as $item){
+        if($item != '.' && $item != '..') {
+          $path = $item;
+          if (file_exists($path) && is_file($path))
+            $gltr_stale_size += filesize($path);
+            $gltr_stale_files_num++;
+        }
       }
     }
   }
