@@ -75,6 +75,9 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 Change Log
 
+1.0.8.1
+- little fix for cached pages count on options page
+
 1.0.8
 - general performance improvement
 - added check for blocking nested translation requests (i.e. www.mysite/en/fr/...)
