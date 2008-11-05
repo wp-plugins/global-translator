@@ -1788,5 +1788,5 @@ if( !defined('WP_CONTENT_DIR') ) define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content
 $gltr_cache_dir = WP_CONTENT_DIR . "/gt-cache";
 $gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
 
-$gltr_VERSION='1.0.8.1';
+$gltr_VERSION='1.0.9beta';
 ?>

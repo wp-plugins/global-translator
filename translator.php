@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 34 different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian,...) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.8.1
+Version: 1.0.9beta
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -246,7 +246,20 @@ define('COMPRESS_CACHE', get_option('gltr_compress_cache'));
 define('BLOG_URL', get_settings('siteurl'));
 define('BLOG_HOME', get_settings('home'));
 define('BLOG_HOME_ESCAPED', str_replace('/', '\\/', BLOG_HOME));
+define('NOT_FOUND',
+'<html><head><title>404 Not found</title></head>
+<body><center><h2>404 Error: content not found</h2></center></body></html>');
 
+$gltr_unavail =
+'<html><head><title>Translation not available</title>
+<style>html,body {font-family: arial, verdana, sans-serif; font-size: 14px;margin-top:0px; margin-bottom:0px; height:100%;}</style></head>
+<body><center><br /><br /><b>This page has not been translated yet.<br /><br />The translation process could take a while: in the meantime a semi-automatic translation will be provided in a few seconds.</b><br /><br /><a href="'.get_settings('home').'">Home page</a></center>
+<script type="text/javascript"><!--
+setTimeout("Redirect()",5000);
+function Redirect(){
+ location.href = "{RESOURCE}";
+}
+// --></script></body></html>';
 
 $gltr_result = '';
 $gltr_engine = $gltr_available_engines[TRANSLATION_ENGINE];
@@ -370,13 +383,9 @@ function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
   return $res;
 } 
 
-
-function gltr_translate($lang, $url) {
-  global $gltr_engine;
-	$unavail_message = "<html><META HTTP-EQUIV='refresh' CONTENT='5;URL={RESOURCE}' /><style>html,body {font-family: arial, verdana, sans-serif; font-size: 14px;margin-top:0px; margin-bottom:0px; height:100%;}</style><body><center><br /><br /><b>This page has not been translated yet.<br /><br />The translation process could take a while: in the meantime a semi-automatic translation will be provided in a few seconds.</b><br /><br /><a href='".get_settings('home')."'>Home page</a></center></body></html>";
-  
+function gltr_clean_url_to_translate(){
   $url = gltr_get_self_url();
-
+  $url_to_translate = "";
   if (REWRITEON) {
     $pattern1 = '/(' . BLOG_HOME_ESCAPED . ')(\\/(' . LANGS_PATTERN . ')\\/)(.+)/';
     $pattern2 = '/(' . BLOG_HOME_ESCAPED . ')\\/(' . LANGS_PATTERN . ')[\\/]{0,1}$/';
@@ -387,17 +396,22 @@ function gltr_translate($lang, $url) {
       $url_to_translate = preg_replace($pattern2, '\\1', $url);
     }
   } else {
-    $url_to_translate = preg_replace('/[\\?&]{0,1}lang\\=(' . LANGS_PATTERN . ')/i', '', $url);    
+    $url_to_translate = preg_replace('/[\\?&]{0,1}lang\\=(' . LANGS_PATTERN . ')/i', '', $url);
   	//gltr_debug("==>$url|$url_to_translate");
   }
+  return $url_to_translate;
+}
 
+function gltr_translate($lang, $url) {
+  global $gltr_engine,$gltr_unavail;
+  
+  $url_to_translate = gltr_clean_url_to_translate();
   $resource = gltr_build_translation_url(BASE_LANG, $lang, $url_to_translate);
+
   if (!gltr_is_connection_allowed()){
-  	//gltr_debug("Translation not allowed for url: $url");
-		return str_replace('{RESOURCE}',$resource,$unavail_message);
-	}
-  
-  
+    return str_replace('{RESOURCE}',$resource,$gltr_unavail);
+  }
+
   $buf = gltr_http_get_content($resource);
 	
 	if (gltr_is_valid_translated_content($buf)){
@@ -406,7 +420,7 @@ function gltr_translate($lang, $url) {
 	} else {
   	gltr_store_translation_engine_status('banned');
   	gltr_debug("Bad translated content for url: $buf");
-		return str_replace('{RESOURCE}',$resource,$unavail_message);
+		return str_replace('{RESOURCE}',$resource,$gltr_unavail);
 	}
 }
 
@@ -480,7 +494,7 @@ function gltr_http_get_content($resource) {
 
 
 function gltr_is_valid_translated_content($content){
-	return (strpos($content, FLAG_BAR_BEGIN) > 0 && strpos($content, FLAG_BAR_END) > 0);
+	return (strpos($content, FLAG_BAR_BEGIN) > 0);
 }
 
 function gltr_store_translation_engine_status($status){
@@ -860,7 +874,6 @@ function gltr_get_page_content($lang, $url) {
  	global $gltr_cache_dir;
 	global $gltr_stale_dir;
   $page = '';
-	$from_cache = false;
   $hash = gltr_hashReqUri($_SERVER['REQUEST_URI']);
   //gltr_debug("Hashing uri: ".$_SERVER['REQUEST_URI']." to: $hash");
 
@@ -868,7 +881,7 @@ function gltr_get_page_content($lang, $url) {
   $staledir = $gltr_stale_dir;
 
   gltr_debug("==>$cachedir");
-  if (!is_dir($cachedir)) {
+  if (!is_dir($cachedir)) { 
     mkdir($cachedir, 0777);
     if(!file_exists($cachedir) || !is_readable($cachedir) || !is_writeable($cachedir)){
     	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cache dir <em>$cachedir</em> cannot be read or modified. <br />Please chmod it to 777.</b>";	
@@ -896,33 +909,22 @@ function gltr_get_page_content($lang, $url) {
   }
   
   if (file_exists($filename) && filesize($filename) > 0) {
+
     // We are done, just return the file and exit
     gltr_debug("cache: returning cached version ($hash) for url:" . gltr_get_self_url());
     $page = gltr_load_cached_page($filename);
-
-    //check the cached file
-    if(!gltr_is_valid_translated_content($page)){
-      gltr_debug("cache: deleting BAD cached version ($filename) for url:" .
-        gltr_get_self_url());
-      //bad cached file
-      unlink($filename);
-      $from_cache = false;
-    } else {
- 			$from_cache = true;
-	    $page .= "<!--CACHED VERSION ($hash)-->";
-	    
-	    $page = gltr_insert_flag_bar($page); //could be skipped 
- 			//check if needs to be scheduled for a new translation
- 			$filetime_days = (time() - filemtime($filename)) / 86400;
- 			
- 			if (EXPIRE_TIME > 0 && $filetime_days >= EXPIRE_TIME ){
- 				gltr_debug("The file $filename has been created more than " . EXPIRE_TIME . " days ago. Scheduling for a new translation");
- 				gltr_move_cached_file_to_stale($hash);
- 			}
+    $page .= "<!--CACHED VERSION ($hash)-->";
+    
+    //$page = gltr_insert_flag_bar($page); //could be skipped 
+		//check if needs to be scheduled for a new translation
+		$filetime_days = (time() - filemtime($filename)) / 86400;
+		
+		if (EXPIRE_TIME > 0 && $filetime_days >= EXPIRE_TIME ){
+			gltr_debug("The file $filename has been created more than " . EXPIRE_TIME . " days ago. Scheduling for a new translation");
+			gltr_move_cached_file_to_stale($hash);
 		}
-  } 
 
-  if (!$from_cache) {
+  } else {
 
     gltr_debug("Connection to engine for url:" . gltr_get_self_url());
     $page = gltr_translate($lang, $url);
@@ -931,7 +933,6 @@ function gltr_get_page_content($lang, $url) {
 			$gltr_last_cached_url = gltr_get_self_url();
       gltr_debug("cache: caching ($filename) [".strlen($page)."] url:" . $gltr_last_cached_url);
       gltr_save_cached_page($page,$filename);
-
       $page .= "<!--NOT CACHED VERSION: ($hash)-->";
       if (file_exists($stale_filename)){
       	unlink($stale_filename);
@@ -942,10 +943,14 @@ function gltr_get_page_content($lang, $url) {
 	      gltr_debug("cache: returning stale version ($hash) for url:" . gltr_get_self_url());
 
 	      $page = gltr_load_cached_page($stale_filename);
-		    $page = gltr_insert_flag_bar($page); //could be skipped 
+		    //$page = gltr_insert_flag_bar($page); //could be skipped 
 	      $page .= "<!--STALE VERSION: ($hash)-->";
 	 			$from_cache = true;
-	    }
+	    } else {
+        //no cache, no translated,no stale
+        header("HTTP/1.1 404 Not Found");
+        header("Status: 404 Not Found");
+      }
     }
   }
   
@@ -1010,6 +1015,7 @@ function gltr_insert_my_rewrite_query_vars($vars) {
 }
 
 function gltr_insert_my_rewrite_parse_query($query) {
+  global $gltr_unavail;
   $gltr_result = "";
 
   		
@@ -1024,12 +1030,13 @@ function gltr_insert_my_rewrite_parse_query($query) {
   	$chosen_langs = get_option('gltr_preferred_languages');
 
 		$can_translate = true;
-
+		$self_url = gltr_get_self_url();
+		
   	if (!in_array($query->query_vars['lang'], $chosen_langs)){
   		gltr_debug("Blocking request for not chosed language:".$query->query_vars['lang']);
   		header("HTTP/1.1 404 Not Found");
 			header("Status: 404 Not Found");
-  		$gltr_result = "404 Not Found";
+  		$gltr_result = NOT_FOUND;
   		$can_translate = false;
   	}
 	  
@@ -1037,7 +1044,7 @@ function gltr_insert_my_rewrite_parse_query($query) {
   		gltr_debug("Limiting bot/crawler access to resource:".$query->query_vars['url']);
   		header("HTTP/1.1 404 Not Found");
 			header("Status: 404 Not Found");
-  		$gltr_result = "404 Not Found";
+  		$gltr_result = NOT_FOUND;
   		$can_translate = false;
   	}
   	
@@ -1046,29 +1053,35 @@ function gltr_insert_my_rewrite_parse_query($query) {
   		gltr_debug("Blocking request for nested translation request:".$query->query_vars['lang']."|".$query->query_vars['url']);
   		header("HTTP/1.1 404 Not Found");
 			header("Status: 404 Not Found");
-  		$gltr_result = "404 Not Found";
+  		$gltr_result = NOT_FOUND;
   		$can_translate = false;
   	}
-
-		$self_url = gltr_get_self_url();
-		if (REWRITEON && strpos($self_url,'?')===false && substr($self_url, -1) != '/'){
-  		header("HTTP/1.1 302 Moved Temporarily");
-  		header("Location: " . gltr_get_self_url() . '/');
-  		die();  		
+  
+	  if (REWRITEON){
+			if (strpos($self_url,'?')===false && strpos($self_url,'&')>0){
+	  		gltr_debug("Blocking bad request:".$query->query_vars['lang']."|".$query->query_vars['url']);
+	  		header("HTTP/1.1 404 Not Found");
+				header("Status: 404 Not Found");
+	  		$gltr_result = NOT_FOUND;
+	  		$can_translate = false;
+			} else if( strpos($self_url,'?')===false && substr($self_url, -1) != '/'){
+	  		header("HTTP/1.1 302 Moved Temporarily");
+	  		header("Location: " . gltr_get_self_url() . '/');
+	  		die();  		
+			}
 		}  	
-
   	if ($can_translate) {
 	   	$lang = $query->query_vars['lang'];
 	   	$url = $query->query_vars['url'];
-	   	if (empty($url)) {
-	     	$url = '';
-	    }
-			
-	    $gltr_result = gltr_get_page_content($lang, $url);
+
+      if (empty($url)) {
+        $url = '';
+      }
+      $gltr_result = gltr_get_page_content($lang, $url);
 		}
 		
+
 		die($gltr_result);
-		
   	//$end = round(microtime(true),4);
   	//gltr_debug("Translated page serving total time:". ($end - $start) . " seconds");
     
@@ -1116,21 +1129,6 @@ function gltr_not_translable_uri(){
       }
     }
   }  
-/*
-  if (isset($_SERVER['QUERY_STRING']))
-    $uri = strtolower($_SERVER['QUERY_STRING']);
-  else
-    $uri = "";
-  if ($uri == "") {
-    return false;
-  } else {
-    while (list($key, $val) = each($not_translable)) {
-      if (strstr($uri, strtolower($val))) {
-        gltr_debug("Detected and blocked untranslable uri: $uri");
-        return true;
-      }
-    }
-  }*/
   return false;
 }
 
