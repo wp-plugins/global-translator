@@ -386,9 +386,16 @@ function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
 function gltr_clean_url_to_translate(){
   $url = gltr_get_self_url();
   $url_to_translate = "";
+
+  $blog_home_esc = BLOG_HOME_ESCAPED;
+
   if (REWRITEON) {
-    $pattern1 = '/(' . BLOG_HOME_ESCAPED . ')(\\/(' . LANGS_PATTERN . ')\\/)(.+)/';
-    $pattern2 = '/(' . BLOG_HOME_ESCAPED . ')\\/(' . LANGS_PATTERN . ')[\\/]{0,1}$/';
+    $contains_index = (strpos($url, 'index.php')!==false);
+    if ($contains_index){
+      $blog_home_esc .= '\\/index.php';
+    }
+    $pattern1 = '/(' . $blog_home_esc . ')(\\/(' . LANGS_PATTERN . ')\\/)(.+)/';
+    $pattern2 = '/(' . $blog_home_esc . ')\\/(' . LANGS_PATTERN . ')[\\/]{0,1}$/';
 
     if (preg_match($pattern1, $url)) {
       $url_to_translate = preg_replace($pattern1, '\\1/\\4', $url);
@@ -537,8 +544,6 @@ function gltr_clean_link($matches){
   //$lang = $wp_query->query_vars['lang'];
   if (TRANSLATION_ENGINE == 'google')
 		return "href=\"" . urldecode($matches[1]) . $matches[3] . "\"";
-	else if (TRANSLATION_ENGINE == 'promt')
-		return "href=\"" . urldecode($matches[1]) . "\"";
 	else 
 		return "href=\"" . urldecode($matches[1]) . "\"";
 }
@@ -557,20 +562,26 @@ function gltr_clean_translated_page($buf, $lang) {
 	//TODO: add <meta name="language" content="LANG" />
 
 
+  $blog_home_esc = BLOG_HOME_ESCAPED;
+  $blog_home = BLOG_HOME;
+
   if (REWRITEON) {
-    $pattern = "/<a([^>]*)href=\"" . BLOG_HOME_ESCAPED . "(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
-    $last_match_id = count($well_known_extensions) + 7;
-  	$repl = "<a\\1href=\"" . BLOG_HOME . '/' . $lang . "\\2\" \\4>";
+    $contains_index = (strpos($url, 'index.php')!==false);
+    if ($contains_index){
+      $blog_home_esc .= '\\/index.php';
+      $blog_home .= '/index.php';
+    }
+    $pattern = "/<a([^>]*)href=\"" . $blog_home_esc . "(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
+    $repl = "<a\\1href=\"" . $blog_home . '/' . $lang . "\\2\" \\4>";
   	gltr_debug($repl."|".$pattern);
     $buf = preg_replace($pattern, $repl, $buf);
   } else {
-    $pattern = "/<a([^>]*)href=\"" . BLOG_HOME_ESCAPED . "\/\?(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
-    $last_match_id = count($well_known_extensions) + 7;
-    $repl = "<a\\1href=\"" . BLOG_HOME . "?\\2&lang=$lang\" \\4>";    
+    $pattern = "/<a([^>]*)href=\"" . $blog_home_esc . "\/\?(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
+    $repl = "<a\\1href=\"" . $blog_home . "?\\2&lang=$lang\" \\4>";
     $buf = preg_replace($pattern, $repl, $buf);
     
-    $pattern = "/<a([^>]*)href=\"" . BLOG_HOME_ESCAPED . "[\/]{0,1}\"([^>]*)>/i";
-    $repl = "<a\\1href=\"" . BLOG_HOME . "?lang=$lang\" \\2>";
+    $pattern = "/<a([^>]*)href=\"" . $blog_home_esc . "[\/]{0,1}\"([^>]*)>/i";
+    $repl = "<a\\1href=\"" . $blog_home . "?lang=$lang\" \\2>";
     $buf = preg_replace($pattern, $repl, $buf);
   }
 
@@ -758,8 +769,7 @@ function gltr_get_flags_bar() {
   return $buf;
 }
 
-function gltr_build_flags_bar()
-{
+function gltr_build_flags_bar() {
   echo (gltr_get_flags_bar());
 }
 
@@ -770,8 +780,12 @@ function build_flags_bar() {
 
 function gltr_get_translated_url($language, $url) {
   if (REWRITEON) {
-
-		$pattern = '/' . BLOG_HOME_ESCAPED . '\\/((' . LANGS_PATTERN . ')[\\/])*(.*)/';
+    $contains_index = (strpos($url, 'index.php')!==false);
+    $blog_home_esc = BLOG_HOME_ESCAPED;
+    if ($contains_index){
+      $blog_home_esc .= '\\/index.php';
+    }
+		$pattern = '/' . $blog_home_esc . '\\/((' . LANGS_PATTERN . ')[\\/])*(.*)/';
 
     if (preg_match($pattern, $url)) {
       $uri = preg_replace($pattern, '\\3', $url);
@@ -779,10 +793,14 @@ function gltr_get_translated_url($language, $url) {
       $uri = '';
     }
 
+    $blog_home = BLOG_HOME;
+    if ($contains_index){
+      $blog_home .= '/index.php';
+    }
     if ($language == BASE_LANG)
-      $url = BLOG_HOME . '/' . $uri;
+      $url = $blog_home . '/' . $uri;
     else
-      $url = BLOG_HOME . '/' . $language . '/' . $uri;
+      $url = $blog_home . '/' . $language . '/' . $uri;
   } else {
     //REWRITEOFF
     $pattern1 = '/(.*)([&|\?]{1})lang=(' . LANGS_PATTERN . ')(.*)/';
@@ -836,8 +854,7 @@ function gltr_get_self_url() {
 }
 
 //rewrite rules definitions
-function gltr_translations_rewrite($wp_rewrite)
-{
+function gltr_translations_rewrite($wp_rewrite) {
   $translations_rules = array('^(' . LANGS_PATTERN . ')$' =>
     'index.php?lang=$matches[1]', '^(' . LANGS_PATTERN . ')/(.+?)$' =>
     'index.php?lang=$matches[1]&url=$matches[2]');
@@ -880,7 +897,7 @@ function gltr_get_page_content($lang, $url) {
   $cachedir = $gltr_cache_dir;
   $staledir = $gltr_stale_dir;
 
-  gltr_debug("==>$cachedir");
+  //gltr_debug("==>$cachedir");
   if (!is_dir($cachedir)) { 
     mkdir($cachedir, 0777);
     if(!file_exists($cachedir) || !is_readable($cachedir) || !is_writeable($cachedir)){
