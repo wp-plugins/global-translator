@@ -295,10 +295,6 @@ function gltr_translator_init() {
   if (REWRITEON) {
     add_filter('generate_rewrite_rules', 'gltr_translations_rewrite');
   }
-  if (!is_readable(WP_CONTENT_DIR) || !is_writable(WP_CONTENT_DIR) ){
-    die ("Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
-    <ul><li>".WP_CONTENT_DIR."</li></ul>");  
-  }
 }
 
 function gltr_add_translated_pages_to_sitemap() {
@@ -890,6 +886,7 @@ function gltr_is_cached($url){
 function gltr_get_page_content($lang, $url) {
  	global $gltr_cache_dir;
 	global $gltr_stale_dir;
+
   $page = '';
   $hash = gltr_hashReqUri($_SERVER['REQUEST_URI']);
   //gltr_debug("Hashing uri: ".$_SERVER['REQUEST_URI']." to: $hash");
@@ -901,14 +898,14 @@ function gltr_get_page_content($lang, $url) {
   if (!is_dir($cachedir)) { 
     mkdir($cachedir, 0777);
     if(!file_exists($cachedir) || !is_readable($cachedir) || !is_writeable($cachedir)){
-    	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cache dir <em>$cachedir</em> cannot be read or modified. <br />Please chmod it to 777.</b>";	
+    	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cache dir <em>$cachedir</em> cannot be read or modified. <br />Please chmod it in order to make it readable and writeable.</b>";
     }
   }
 
   if (!is_dir($staledir)) {
     mkdir($staledir, 0777);
     if(!file_exists($staledir) || !is_readable($staledir) || !is_writeable($staledir)){
-    	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The stale dir <em>$staledir</em> cannot be read or modified. <br />Please chmod it to 777.</b>";	
+    	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The stale dir <em>$staledir</em> cannot be read or modified. <br />Please chmod it readable and writeable.</b>";
     }
   }
 
@@ -919,10 +916,10 @@ function gltr_get_page_content($lang, $url) {
   $stale_filename = $staledir . '/' . $hash;
   
   if(file_exists($filename) && (!is_readable($filename) || !is_writeable($filename))){
-  	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cached file <em>$filename</em> cannot be read or modified. <br />Please chmod it to 777.</b>";	
+  	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cached file <em>$filename</em> cannot be read or modified. <br />Please chmod it in order to make it readable and writeable.</b>";
   }
   if(file_exists($stale_filename) && (!is_readable($stale_filename) || !is_writeable($stale_filename))){
-  	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cached file <em>$stale_filename</em> cannot be read or modified. <br />Please chmod it to 777.</b>";	
+  	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cached file <em>$stale_filename</em> cannot be read or modified. <br />Please chmod it in order to make it readable and writeable.</b>";
   }
   
   if (file_exists($filename) && filesize($filename) > 0) {
@@ -1038,12 +1035,18 @@ function gltr_insert_my_rewrite_parse_query($query) {
   		
   
   if (isset($query->query_vars['lang'])) {
-  	//gltr_debug("=============");
-  	//gltr_debug($query->query_vars);
-  	//$start= round(microtime(true),4);
-		if (gltr_not_translable_uri()){
-	  		return;
+
+    if (!is_readable(WP_CONTENT_DIR) || !is_writable(WP_CONTENT_DIR) ){
+      header("HTTP/1.1 404 Not Found");
+      header("Status: 404 Not Found");
+      die ("Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
+      <ul><li>".WP_CONTENT_DIR."</li></ul>");
+    }
+
+    if (gltr_not_translable_uri()){
+   		return;
 		}
+
   	$chosen_langs = get_option('gltr_preferred_languages');
 
 		$can_translate = true;
