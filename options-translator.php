@@ -214,32 +214,33 @@ if (isset($_POST['stage'])){
   
   $message = "";
   
-  if (!is_readable(WP_CONTENT_DIR) || !is_writable(WP_CONTENT_DIR) ){
+  if (!is_dir($cachedir) && (!is_readable(WP_CONTENT_DIR) || !is_writable(WP_CONTENT_DIR) )){
     $message = "Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
     <ul><li>".WP_CONTENT_DIR."</li></ul>";
   } else {
-	  if (!is_dir($cachedir)){
-	  	if(!mkdir($cachedir, 0777)){
-	      $message = "Unable to complete Global Translator initialization. Plese manually create and make readable and writeable the following directory:
-	      <ul><li>".$cachedir."</li></ul>";
-	  	} 
-		} else if (!is_readable($cachedir) || !is_writable($cachedir) ){
-	    $message = "Unable to complete Global Translator initialization. Plese make readable and writeable the following directory:
-	    <ul><li>".$cachedir."</li></ul>";
-	  } 
-	  
-	  if (is_dir($cachedir) && is_readable($cachedir) && is_writable($cachedir)){
-		  $staledir = $gltr_stale_dir;
-	  	if (!is_dir($staledir)){
-		  	if(!mkdir($staledir, 0777)){
-		      $message = "Unable to complete Global Translator initialization. Plese manually create and make readable and writeable the following directory:
-		      <ul><li>".$staledir."</li></ul>";
-		  	} 
-			} else if (!is_readable($staledir) || !is_writable($staledir) ){
-		    $message = "Unable to complete Global Translator initialization. Plese make readable and writeable the following directory:
-		    <ul><li>".$staledir."</li></ul>";
-		  } 
-	  }
+  
+  if (!is_dir($cachedir)){
+    if(!mkdir($cachedir, 0777)){
+      $message = "Unable to complete Global Translator initialization. Plese manually create and make readable and writeable the following directory:
+      <ul><li>".WP_CONTENT_DIR."</li></ul>";
+    }
+  } else if (!is_readable($cachedir) || !is_writable($cachedir) ){
+    $message = "Unable to complete Global Translator initialization. Plese make readable and writeable the following directory:
+    <ul><li>".$cachedir."</li></ul>";
+  }
+
+  if (is_dir($cachedir) && is_readable($cachedir) && is_writable($cachedir)){
+    $staledir = $gltr_stale_dir;
+    if (!is_dir($staledir)){
+      if(!mkdir($staledir, 0777)){
+        $message = "Unable to complete Global Translator initialization. Plese manually create and make readable and writeable the following directory:
+        <ul><li>".$cachedir."</li></ul>";
+      }
+    } else if (!is_readable($staledir) || !is_writable($staledir) ){
+      $message = "Unable to complete Global Translator initialization. Plese make readable and writeable the following directory:
+      <ul><li>".$staledir."</li></ul>";
+    }
+  }
 	  
 	  //check files
 	  /*

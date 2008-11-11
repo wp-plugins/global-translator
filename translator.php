@@ -896,14 +896,18 @@ function gltr_get_page_content($lang, $url) {
 
   //gltr_debug("==>$cachedir");
   if (!is_dir($cachedir)) { 
-    mkdir($cachedir, 0777);
+    if (!@mkdir($cachedir, 0777)){
+     	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cache dir <em>$cachedir</em> cannot be created. <br />Please make readable and writeable the following directory: <br /><em>".WP_CONTENT_DIR."</em>.</b>";
+    }
     if(!file_exists($cachedir) || !is_readable($cachedir) || !is_writeable($cachedir)){
     	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The cache dir <em>$cachedir</em> cannot be read or modified. <br />Please chmod it in order to make it readable and writeable.</b>";
     }
   }
 
   if (!is_dir($staledir)) {
-    mkdir($staledir, 0777);
+    if (!@mkdir($staledir, 0777)){
+    	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The stale dir <em>$staledir</em> cannot be created. <br />Please make readable and writeable the following directory: <br /><em>$cachedir</em>.</b>";
+    }
     if(!file_exists($staledir) || !is_readable($staledir) || !is_writeable($staledir)){
     	return "<b>Global Translator has detected a problem with your filesystem permissions:<br />The stale dir <em>$staledir</em> cannot be read or modified. <br />Please chmod it readable and writeable.</b>";
     }
@@ -1029,18 +1033,20 @@ function gltr_insert_my_rewrite_query_vars($vars) {
 }
 
 function gltr_insert_my_rewrite_parse_query($query) {
-  global $gltr_unavail;
+  global $gltr_unavail,$gltr_cache_dir;
   $gltr_result = "";
 
   		
   
   if (isset($query->query_vars['lang'])) {
 
-    if (!is_readable(WP_CONTENT_DIR) || !is_writable(WP_CONTENT_DIR) ){
-      header("HTTP/1.1 404 Not Found");
-      header("Status: 404 Not Found");
-      die ("Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
-      <ul><li>".WP_CONTENT_DIR."</li></ul>");
+    if (!is_dir($gltr_cache_dir)){
+      if (!is_readable(WP_CONTENT_DIR) || !is_writable(WP_CONTENT_DIR) ){
+        header("HTTP/1.1 404 Not Found");
+        header("Status: 404 Not Found");
+        die ("Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
+        <ul><li>".WP_CONTENT_DIR."</li></ul>");
+      }
     }
 
     if (gltr_not_translable_uri()){
