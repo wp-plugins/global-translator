@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 34 different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian,...) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.9beta
+Version: 1.0.9
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -74,6 +74,14 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.0.9
+- Added 404 error code for not yet translated pages
+- Added support for IIS rewrite rules (based on the usage of "/index.php" at the beginning of the permalink)
+- other performances improvements
+
+1.0.8.1
+- little fix for cached pages count on options page
 
 1.0.8
 - general performance improvement
