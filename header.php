@@ -148,11 +148,18 @@ $gltr_ua = array(
 "Mozilla/5.0 Galeon/1.0.2 (X11; Linux i686; U;)"
 );
 
+function gltr_get_flag_image($language) {
+  //thanks neanton!
+  $path = strstr(realpath(dirname(__file__)), 'wp-content');
+  $path = str_replace('\\', '/', $path);
+  return get_settings('siteurl') . '/' . $path . '/flag_' . $language . '.png';
+}
+
 function gltr_sitemap_plugin_detected(){
 	if (function_exists('get_plugins')){
 		$all_plugins = get_plugins();
 		foreach( (array)$all_plugins as $plugin_file => $plugin_data) {
-			if ($plugin_file == 'google-sitemap-generator/sitemap.php') return true;
+			if ($plugin_file == 'google-sitemap-generator/sitemap.php'||$plugin_file == 'sitemap.php') return true;
 		}
 		return false;
 	} else
@@ -1109,6 +1116,42 @@ $googleEngine = new gltr_translation_engine(
 								    'uk'		=> 'Ukrainian',
 								    'vi'		=> 'Vietnamese'
                     ),
+  'no'    => array( 'no'		=>'Norwegian',
+								    'it'    => 'Italian',
+									  'ko'    => 'Korean',
+									  'zh-CN' => 'Chinese (Simplified)',
+									  'pt'    => 'Portuguese',
+									  'en'    => 'English',
+									  'de'    => 'German',
+									  'fr'    => 'French',
+									  'es'    => 'Spanish',
+									  'ja'    => 'Japanese',
+									  'ar'    => 'Arabic',
+									  'ru'		=> 'Russian',
+									  'el'    => 'Greek',
+									  'nl'		=> 'Dutch',
+								    'bg'		=>'Bulgarian',
+								    'cs'		=>'Czech',
+								    'hr'		=>'Croat',
+								    'da'		=>'Danish',
+								    'fi'		=>'Finnish',
+								    'hi'		=>'Hindi',
+								    'pl'		=>'Polish',
+								    'sv'		=>'Swedish',
+								    'el'		=>'Greek',
+    								'ro'		=>'Rumanian',
+								    'ca'    => 'Catalan',
+								    'tl'    => 'Filipino',
+								    'iw'		=> 'Hebrew',
+								    'id'		=> 'Indonesian',
+								    'lv'		=> 'Latvian',
+								    'lt'		=> 'Lithuanian',
+								    'sr'		=> 'Serbian',
+								    'sk'		=> 'Slovak',
+								    'sl'		=> 'Slovenian',
+								    'uk'		=> 'Ukrainian',
+								    'vi'		=> 'Vietnamese'
+                    ),
   'sv'    => array( 'sv'		=>'Swedish',
     								'it'    => 'Italian',
 									  'ko'    => 'Korean',
@@ -1788,5 +1831,5 @@ if( !defined('WP_CONTENT_DIR') ) define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content
 $gltr_cache_dir = WP_CONTENT_DIR . "/gt-cache";
 $gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
 
-$gltr_VERSION='1.0.9.1';
+$gltr_VERSION='1.0.9.2';
 ?>

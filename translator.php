@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 34 different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian,...) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.9.1
+Version: 1.0.9.2
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -74,6 +74,10 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+1.0.9.2
+- Better IIS url rewriting support
+- Fixed Norwegian configuration
+- Moved shared function to header.php
 
 1.0.9.1
 - Changed HTTP error for not yet translated pages from 404 to 503 (Service Temporarily Unavailable)
@@ -254,7 +258,6 @@ define('TRANSLATION_ENGINE', get_option('gltr_my_translation_engine'));
 define('SITEMAP_INTEGRATION', get_option('gltr_sitemap_integration'));
 define('EXPIRE_TIME', get_option('gltr_cache_expire_time'));
 define('COMPRESS_CACHE', get_option('gltr_compress_cache'));
-define('BLOG_URL', get_settings('siteurl'));
 define('BLOG_HOME', get_settings('home'));
 define('BLOG_HOME_ESCAPED', str_replace('/', '\\/', BLOG_HOME));
 define('NOT_FOUND',
@@ -558,7 +561,8 @@ function gltr_clean_link($matches){
 function gltr_clean_translated_page($buf, $lang) {
   global $gltr_engine;
 	global $well_known_extensions;  
-	
+	$is_IIS = (strpos($_SERVER['SERVER_SOFTWARE'], 'Microsoft-IIS') !== false) ? true : false;
+
 	$patterns = $gltr_engine->get_links_pattern();
 	foreach( $patterns as $id => $pattern){
   	$buf = preg_replace_callback($pattern, "gltr_clean_link", $buf);
@@ -573,15 +577,19 @@ function gltr_clean_translated_page($buf, $lang) {
   $blog_home = BLOG_HOME;
 
   if (REWRITEON) {
-    $contains_index = (strpos($url, 'index.php')!==false);
-    if ($contains_index){
+    if ($is_IIS){
       $blog_home_esc .= '\\/index.php';
       $blog_home .= '/index.php';
+      $pattern = "/<a([^>]*)href=\"" . $blog_home_esc . "(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
+      $repl = "<a\\1href=\"" . $blog_home . '/' . $lang . "\\2\" \\4>";
+      gltr_debug("IS-IIS".$repl."|".$pattern);
+      $buf = preg_replace($pattern, $repl, $buf);
+    } else {
+      $pattern = "/<a([^>]*)href=\"" . $blog_home_esc . "(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
+      $repl = "<a\\1href=\"" . $blog_home . '/' . $lang . "\\2\" \\4>";
+      gltr_debug($repl."|".$pattern);
+      $buf = preg_replace($pattern, $repl, $buf);
     }
-    $pattern = "/<a([^>]*)href=\"" . $blog_home_esc . "(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
-    $repl = "<a\\1href=\"" . $blog_home . '/' . $lang . "\\2\" \\4>";
-  	gltr_debug($repl."|".$pattern);
-    $buf = preg_replace($pattern, $repl, $buf);
   } else {
     $pattern = "/<a([^>]*)href=\"" . $blog_home_esc . "\/\?(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
     $repl = "<a\\1href=\"" . $blog_home . "?\\2&lang=$lang\" \\4>";
@@ -830,12 +838,6 @@ function gltr_get_translated_url($language, $url) {
   return $url;
 }
 
-function gltr_get_flag_image($language) {
-  //thanks neanton!
-  $path = strstr(realpath(dirname(__file__)), 'wp-content');
-  $path = str_replace('\\', '/', $path);
-  return BLOG_URL . '/' . $path . '/flag_' . $language . '.png';
-}
 
 function gltr_get_self_url() {
   $full_url = 'http';
