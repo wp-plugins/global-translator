@@ -126,15 +126,17 @@ if (isset($_POST['stage'])){
 		  
 	  } else {
 	  	//update options button pressed
-	  	$iserror = false;
-	    
+
+
+      $iserror = false;
 	    if (count ($gltr_preferred_languages) == 0) {
 	      $message .= "Error: you must choose almost one of the available translations.";
 	      $iserror = true;
 	    }
 	    
 	    if(!$iserror) {
-
+        if (file_exists($gltr_merged_image) && is_file($gltr_merged_image))
+          unlink($gltr_merged_image);
 	      update_option('gltr_base_lang', $_POST['gltr_base_lang']);
 	      update_option('gltr_col_num', $_POST['gltr_col_num']);
 	      update_option('gltr_html_bar_tag', $_POST['gltr_html_bar_tag']);
@@ -456,12 +458,19 @@ if($message!="") { ?>
 
   	<fieldset class="options">
   		<h3><?php _e('Flags bar layout') ?></h3>
-  		<table width="100%" cellpadding="5" class="editform"><tr><td>
-        <label><input type="radio" <?php if($gltr_html_bar_tag == 'TABLE') {?> checked <?php } ?> name="gltr_html_bar_tag" value="TABLE">&nbsp;<?php _e('Enclose the flags inside a TABLE and show') ?>
-          <select name="gltr_col_num"/>
+
+  		<table width="100%" cellpadding="5" class="editform">
+      <tr><td width="350">
+        <label><input type="radio" <?php if($gltr_html_bar_tag == 'TABLE') {?> checked <?php } ?> name="gltr_html_bar_tag" value="TABLE">&nbsp;<?php _e('Enclose the flags inside a TABLE  and show:') ?>
+        </label><br />
+        <label><input type="radio" <?php if($gltr_html_bar_tag == 'MAP') {?> checked <?php } ?> name="gltr_html_bar_tag" value="MAP">&nbsp;<?php _e('Use a single and optimized image map and show:') ?>
         </label>
-      </td></tr>
-      <tr><td>
+      </td>
+      <td>
+          <select name="gltr_col_num"/>
+      </td>
+      </tr>
+      <tr><td colspan=2>
         <label><input type="radio" <?php if($gltr_html_bar_tag == 'DIV') {?> checked <?php } ?> name="gltr_html_bar_tag" value="DIV">&nbsp;<?php _e('Enclose the flags inside a DIV (for CSS customization)') ?>
         </label>
       </td></tr>

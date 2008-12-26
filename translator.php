@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 34 different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian,...) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.0.9.2
+Version: 1.1
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -74,6 +74,11 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.1
+- New configuration feature: flags bar in a single image (based on contribution by Amir - http://www.gibni.com)
+- translated Portuguese languages array (Thanks to Henrique Cintra)
+
 1.0.9.2
 - Better IIS url rewriting support
 - Fixed Norwegian configuration
@@ -702,20 +707,17 @@ function gltr_build_request($host, $http_req) {
 
 
 function gltr_get_flags_bar() {
-  global $gltr_engine, $wp_query;
+  global $gltr_engine, $wp_query, $gltr_merged_image;
 	if (!isset($gltr_engine)||$gltr_engine == null){
 		gltr_debug("WARNING: Options not set!!");
 		return "<b>Global Translator not configured yet.</b>";
 	}
+  
 
-  $use_table = false;
-  if (HTML_BAR_TAG == 'TABLE')
-    $use_table = true;
   $num_cols = BAR_COLUMNS;
 
   $buf = '';
-  if ($num_cols < 0)
-    $num_cols = 0;
+  if ($num_cols < 0)$num_cols = 0;
 	
   
   $transl_map = $gltr_engine->get_languages_matrix();
@@ -726,12 +728,23 @@ function gltr_get_flags_bar() {
 
   $buf .= "\n" . FLAG_BAR_BEGIN; //initial marker
 
-  if ($use_table)
+  if (HTML_BAR_TAG == 'TABLE')
     $buf .= "<table border='0'><tr>";
-  else
+  else if (HTML_BAR_TAG == 'DIV')
     $buf .= "<div id=\"translation_bar\">";
+  else if (HTML_BAR_TAG == 'MAP')
+    $buf .= "<div id=\"translation_bar\"><map id=\"gltr_flags_map\" name=\"gltr_flags_map\">";
 
   $curr_col = 0;
+  $curr_row = 0;
+
+  $dst_x = 0;
+  $dst_y = 0;
+  $map_left=0;
+  $map_top=0;
+  $map_right=16;
+  $map_bottom=11;
+  $grid;
 
   //filter preferred
   $preferred_transl = array();
@@ -739,27 +752,68 @@ function gltr_get_flags_bar() {
     if ($key == BASE_LANG || in_array($key, get_option('gltr_preferred_languages')))
       $preferred_transl[$key] = $value;
   }
-  
+
+  $num_rows = (int)(count($preferred_transl)/$num_cols);
+  if (count($preferred_transl)%$num_cols>0)$num_rows+=1;
+
+  if (HTML_BAR_TAG == 'MAP' && !file_exists($gltr_merged_image)){
+    $img_width = $num_cols*20;
+    $img_height = $num_rows*15;
+    $grid = imagecreatetruecolor ($img_width, $img_height);
+    imagecolortransparent($grid, 000000);
+  }
+
   foreach ($preferred_transl as $key => $value) {
     if ($curr_col >= $num_cols && $num_cols > 0) {
-      if ($use_table)
-        $buf .= "</tr><tr>";
+      if (HTML_BAR_TAG == 'TABLE') $buf .= "</tr><tr>";
       $curr_col = 0;
+      $dst_x = 0;
+      $map_left = 0;
+      $map_right = 16;
+      $curr_row++;
     }
+    $dst_y = $curr_row * 15;
+    $map_top = $curr_row * 15;
+    $map_bottom = $curr_row * 15 + 11;
+
     $flg_url = gltr_get_translated_url($key, gltr_get_self_url());
     $flg_image_url = gltr_get_flag_image($key);
-    if ($use_table)
-      $buf .= "<td>";
-    $buf .= "<a id='flag_$key' href='$flg_url' hreflang='$key' $lnk_attr><img id='flag_img_$key' src='$flg_image_url' alt='$value flag' title='$value'  border='0' /></a>";
-    if ($use_table)
-      $buf .= "</td>";
-    if ($num_cols > 0)
-      $curr_col += 1;
+    $flg_image_path = gltr_get_flag_image_path($key);
+
+    if (HTML_BAR_TAG == 'TABLE') $buf .= "<td>";
+
+    if (HTML_BAR_TAG == 'MAP'){
+    	$buf .="<area shape='rect' coords='$map_left,$map_top,$map_right,$map_bottom' href='$flg_url' id='flag_$key' hreflang='$key' $lnk_attr  title='$value'/>";
+      $map_left = $map_left+20;
+      $map_right= $map_right+20;
+    }else{
+      $buf .= "<a id='flag_$key' href='$flg_url' hreflang='$key' $lnk_attr><img id='flag_img_$key' src='$flg_image_url' alt='$value flag' title='$value'  border='0' /></a>";
+    }
+
+    if (HTML_BAR_TAG == 'TABLE') $buf .= "</td>";
+
+    if ($num_cols > 0) $curr_col += 1;
+
+    if (HTML_BAR_TAG == 'MAP' && !file_exists($gltr_merged_image)){
+      $img_tmp = imagecreatefrompng($flg_image_path);
+
+      imagecopymerge($grid, $img_tmp, $dst_x, $dst_y, 0, 0, 16, 11, 100);
+      //gltr_debug("dst_x=$dst_x;dst_y=$dst_y;curr_row=$curr_row;curr_col=$curr_col;num_rows=$num_rows;flg_image_url=$flg_image_url");
+      $dst_x = $dst_x + 20;
+      imagedestroy($img_tmp);
+    }
+  }//end foreach ($preferred_transl as $key => $value) {
+
+  if (HTML_BAR_TAG == 'MAP' && !file_exists($gltr_merged_image)){
+    imagepng($grid, $gltr_merged_image);
+    imagedestroy($grid);
+  }
+  if (HTML_BAR_TAG == 'MAP'){
+    $merged_image_url=gltr_get_flags_image();
   }
 
   while ($curr_col < $num_cols && $num_cols > 0) {
-    if ($use_table)
-      $buf .= "<td>&nbsp;</td>";
+    if (HTML_BAR_TAG == 'TABLE') $buf .= "<td>&nbsp;</td>";
     $curr_col += 1;
   }
 
@@ -775,11 +829,17 @@ function gltr_get_flags_bar() {
   //Thanks!    
   //
   $n2hlink = "<a style=\"font-size:9px;\" href=\"http://www.nothing2hide.net\">By N2H</a>";
-  if ($use_table)
+  if (HTML_BAR_TAG == 'MAP'){
+    $buf .="</map>";
+    $buf .= "<img style='border:0px;' src='$merged_image_url' usemap='#gltr_flags_map'/></div>";
+  } 
+  
+  if (HTML_BAR_TAG == 'TABLE')
     $buf .= "</tr><tr><td colspan=\"$num_cols\">$n2hlink</td></tr></table>";
-  else
+  else if (HTML_BAR_TAG == 'DIV')
     $buf .= "<div id=\"transl_sign\">$n2hlink</div></div>";
-
+  else
+    $buf .= "<div id=\"transl_sign\">$n2hlink</div>";
   $buf .= FLAG_BAR_END . "\n"; //final marker
   return $buf;
 }
