@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 34 different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian,...) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.1
+Version: 1.1.1
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -75,9 +75,11 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 Change Log
 
-1.1
+1.1.1
 - New configuration feature: flags bar in a single image (based on contribution by Amir - http://www.gibni.com)
-- translated Portuguese languages array (Thanks to Henrique Cintra)
+- Translated Portuguese languages array (Thanks to Henrique Cintra)
+- Added Chinese (Traditional) translation
+- Fixed "division by zero" error
 
 1.0.9.2
 - Better IIS url rewriting support
@@ -708,16 +710,14 @@ function gltr_build_request($host, $http_req) {
 
 function gltr_get_flags_bar() {
   global $gltr_engine, $wp_query, $gltr_merged_image;
-	if (!isset($gltr_engine)||$gltr_engine == null){
-		gltr_debug("WARNING: Options not set!!");
+  $num_cols = BAR_COLUMNS;
+	if (!isset($gltr_engine) || $gltr_engine == null || $num_cols <= 0){
+		gltr_debug("WARNING!<br/> ");
 		return "<b>Global Translator not configured yet.</b>";
 	}
   
 
-  $num_cols = BAR_COLUMNS;
-
   $buf = '';
-  if ($num_cols < 0)$num_cols = 0;
 	
   
   $transl_map = $gltr_engine->get_languages_matrix();
