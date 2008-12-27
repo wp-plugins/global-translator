@@ -215,7 +215,11 @@ if (isset($_POST['stage'])){
   $cachedir = $gltr_cache_dir;
   
   $message = "";
-  
+
+  if (!is_writeable(dirname(__file__))){
+    $message = "Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
+    <ul><li>".dirname(__file__)."</li></ul>";
+  } else
   if (!is_dir($cachedir) && (!is_readable(WP_CONTENT_DIR) || !is_writable(WP_CONTENT_DIR) )){
     $message = "Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
     <ul><li>".WP_CONTENT_DIR."</li></ul>";

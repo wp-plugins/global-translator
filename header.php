@@ -1858,5 +1858,5 @@ $gltr_cache_dir = WP_CONTENT_DIR . "/gt-cache";
 $gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
 $gltr_merged_image=dirname(__file__) . '/gltr_image_map.png';
 
-$gltr_VERSION='1.1.1';
+$gltr_VERSION='1.1.2';
 ?>
