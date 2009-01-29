@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 34 different languages (English, French, Italian, German, Portuguese, Spanish, Japanese, Korean, Chinese, Arabic, Russian, Greek, Dutch, Norwegian,...) by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.1.2
+Version: 1.2
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -74,6 +74,9 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.2
+- Fixed Chinese (Traditional) translation
 
 1.1.2
 - New configuration feature: flags bar in a single image (based on contribution by Amir - http://www.gibni.com)
@@ -251,9 +254,9 @@ define('FLAG_BAR_BEGIN', '<!--FLAG_BAR_BEGIN-->');
 define('FLAG_BAR_END', '<!--FLAG_BAR_END-->');
 define('USER_AGENT','Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.2.1) Gecko/20021204');
 
-define('LANGS_PATTERN', 'it|ko|zh-CN|pt|en|de|fr|es|ja|ar|ru|el|nl|zh|zt|no|bg|cs|hr|da|fi|hi|pl|ro|sv|ca|tl|iw|id|lv|lt|sr|sk|sl|uk|vi');
-define('LANGS_PATTERN_WITH_SLASHES', '/it/|/ko/|/zh-CN/|/pt/|/en/|/de/|/fr/|/es/|/ja/|/ar/|/ru/|/el/|/nl/|/zh/|/zt/|/no/|/bg/|/cs/|/hr/|/da/|/fi/|/hi/|/pl/|/ro/|/sv/|/ca/|/tl/|/iw/|/id/|/lv/|/lt/|/sr/|/sk/|/sl/|/uk/|/vi/');
-define('LANGS_PATTERN_WITHOUT_FINAL_SLASH', '/it|/ko|/zh-CN|/pt|/en|/de|/fr|/es|/ja|/ar|/ru|/el|/nl|/zh|/zt|/no|/bg|/cs|/hr|/da|/fi|/hi|/pl|/ro|/sv|/ca|/tl|/iw|/id|/lv|/lt|/sr|/sk|/sl|/uk|/vi');
+define('LANGS_PATTERN', 'it|ko|zh-CN|zh-TW|pt|en|de|fr|es|ja|ar|ru|el|nl|zh|zt|no|bg|cs|hr|da|fi|hi|pl|ro|sv|ca|tl|iw|id|lv|lt|sr|sk|sl|uk|vi');
+define('LANGS_PATTERN_WITH_SLASHES', '/it/|/ko/|/zh-CN/|/zh-TW/|/pt/|/en/|/de/|/fr/|/es/|/ja/|/ar/|/ru/|/el/|/nl/|/zh/|/zt/|/no/|/bg/|/cs/|/hr/|/da/|/fi/|/hi/|/pl/|/ro/|/sv/|/ca/|/tl/|/iw/|/id/|/lv/|/lt/|/sr/|/sk/|/sl/|/uk/|/vi/');
+define('LANGS_PATTERN_WITHOUT_FINAL_SLASH', '/it|/ko|/zh-CN|/zh-TW|/pt|/en|/de|/fr|/es|/ja|/ar|/ru|/el|/nl|/zh|/zt|/no|/bg|/cs|/hr|/da|/fi|/hi|/pl|/ro|/sv|/ca|/tl|/iw|/id|/lv|/lt|/sr|/sk|/sl|/uk|/vi');
 
 
 define('CONN_INTERVAL', get_option('gltr_conn_interval'));

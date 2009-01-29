@@ -5,9 +5,9 @@ Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.3
 Tested up to: 2.7
-Stable Tag: 1.1.2
+Stable Tag: 1.2
 
-Automatically translates your blog in fourteen different languages!
+Automatically translates your blog in 34 different languages!
 
 == Description ==
 
@@ -36,6 +36,11 @@ please consider to support me with a donation.
 For the latest information and changelog visit the website
 
 http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
+
+
+**A commercial version with full support and additional features is also available!** 
+Learn more by visiting this page: http://www.nothing2hide.net/global-translator-pro/
+
 
 == Installation ==
 
