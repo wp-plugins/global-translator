@@ -4,6 +4,37 @@ $gltr_stale_size = 0;
 $gltr_cache_size = 0;
 $gltr_cached_files_num = 0;
 $gltr_stale_files_num = 0;
+$showstats = false;
+if (isset($_POST['gltr_stats']) && 'show' == $_POST['gltr_stats']){
+    gltr_init_info();
+    $showstats = true;
+} 
+
+function gltr_files_stats($dir,$exclusions=""){
+  //gltr_debug("====>CALC: $dir");
+	$res = array("num"=>0,"size"=>0);
+  if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
+  	$files = glob($dir . '/*');
+    if (is_array($files)){
+      foreach($files as $path){
+          if ($exclusions != "" && strpos($path,$exclusions)!==false) {
+            //gltr_debug("$dir: EXCLUDING====>$item");
+          	continue;
+    }
+          if (is_dir($path)){
+          	//gltr_debug("====>Found dir: $path");
+          	$rres = gltr_files_stats($path, $exclusions);
+            $res["size"] += $rres["size"];
+            $res["num"] += $rres["num"];
+          }else if (file_exists($path) && is_file($path))
+            $res["size"] += filesize($path);
+            $res["num"]++;
+  }
+      
+      }
+    }
+  return $res;
+  }
 
 function gltr_init_info(){
 	global $gltr_stale_size;
@@ -12,38 +43,18 @@ function gltr_init_info(){
 	global $gltr_stale_files_num;
 	global $gltr_cache_dir;
 	global $gltr_stale_dir;
+	
 	//cachedir
-  $dir = $gltr_cache_dir;
-  if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
-  	$files = glob($dir . '/*');
-    if (is_array($files)){
-      foreach($files as $item){
-        if($item != '.' && $item != '..') {
-          $path = $item;
-          if (file_exists($path) && is_file($path))
-            $gltr_cache_size += filesize($path);
-            $gltr_cached_files_num++;
-        }
-      }
-    }
-  }
-  $dir = $gltr_stale_dir;
-  if (file_exists($dir) && is_dir($dir) && is_readable($dir)) {
-  	$files = glob($dir . '/*');
-    if (is_array($files)){
-      foreach($files as $item){
-        if($item != '.' && $item != '..') {
-          $path = $item;
-          if (file_exists($path) && is_file($path))
-            $gltr_stale_size += filesize($path);
-            $gltr_stale_files_num++;
-        }
-      }
-    }
-  }
-
+  $res_cache = gltr_files_stats($gltr_cache_dir, "stale");
+  $gltr_cache_size = $res_cache["size"];
+  $gltr_cached_files_num = $res_cache["num"];
+  //staledir
+  $res_cache = gltr_files_stats($gltr_stale_dir);
+  $gltr_stale_size = $res_cache["size"];
+  $gltr_stale_files_num = $res_cache["num"];
+  
 }
-gltr_init_info();
+
 
 
 function gltr_get_last_cached_file_time(){
@@ -58,11 +69,9 @@ function gltr_get_last_cached_file_time(){
 
 load_plugin_textdomain('gltr'); // NLS
 
-	
-	
 $location = get_option('siteurl') . '/wp-admin/admin.php?page=global-translator/options-translator.php'; // Form Action URI
-
-
+	
+$diff_time = gltr_get_last_cached_file_time();
 
 /*check form submission and update options*/
 
@@ -106,6 +115,7 @@ if (isset($_POST['stage'])){
 		$gltr_preferred_languages = get_option('gltr_preferred_languages');
 	} else if ('process' == $_POST['stage']){
 	  if(!empty($_POST["gltr_erase_cache"])) {
+	  	/* deactivated!
 	  	//Erase cache button pressed
   	  $cachedir = $gltr_cache_dir;
 	    if (file_exists($cachedir) && is_dir($cachedir) && is_readable($cachedir)) {
@@ -123,10 +133,9 @@ if (isset($_POST['stage'])){
 	      //$message = "Unable to erase cache or cache dir '$cachedir' doesn't exist.";
 	      //break;
 	    }
-		  
+		  */
 	  } else {
 	  	//update options button pressed
-
 
       $iserror = false;
 	    if (count ($gltr_preferred_languages) == 0) {
@@ -143,9 +152,10 @@ if (isset($_POST['stage'])){
 	      update_option('gltr_my_translation_engine', $_POST['gltr_my_translation_engine']);
 	      update_option('gltr_preferred_languages', array());
 	      update_option('gltr_preferred_languages', $_POST['gltr_preferred_languages']);
-				update_option("gltr_last_connection_time",0);
+				update_option("gltr_last_connection_time",time());
 				update_option("gltr_translation_status","unknown");
-	      
+	      $diff_time = -1;
+
 	      $conn_int = $_POST['gltr_conn_interval'];
 	      if (!is_numeric($conn_int))$conn_int = 300;
 	      update_option('gltr_conn_interval', $conn_int);
@@ -217,21 +227,21 @@ if (isset($_POST['stage'])){
   $message = "";
 
   if (!is_writeable(dirname(__file__))){
-    $message = "Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
+    $message = "Unable to complete Global Translator initialization. Please make writable and readable the following directory:
     <ul><li>".dirname(__file__)."</li></ul>";
   } else
   if (!is_dir($cachedir) && (!is_readable(WP_CONTENT_DIR) || !is_writable(WP_CONTENT_DIR) )){
-    $message = "Unable to complete Global Translator initialization. Plese make writable and readable the following directory:
+    $message = "Unable to complete Global Translator initialization. Please make writable and readable the following directory:
     <ul><li>".WP_CONTENT_DIR."</li></ul>";
   } else {
   
   if (!is_dir($cachedir)){
     if(!mkdir($cachedir, 0777)){
-      $message = "Unable to complete Global Translator initialization. Plese manually create and make readable and writeable the following directory:
+      $message = "Unable to complete Global Translator initialization. Please manually create and make readable and writeable the following directory:
       <ul><li>".WP_CONTENT_DIR."</li></ul>";
     }
   } else if (!is_readable($cachedir) || !is_writable($cachedir) ){
-    $message = "Unable to complete Global Translator initialization. Plese make readable and writeable the following directory:
+    $message = "Unable to complete Global Translator initialization. Please make readable and writeable the following directory:
     <ul><li>".$cachedir."</li></ul>";
   }
 
@@ -239,11 +249,11 @@ if (isset($_POST['stage'])){
     $staledir = $gltr_stale_dir;
     if (!is_dir($staledir)){
       if(!mkdir($staledir, 0777)){
-        $message = "Unable to complete Global Translator initialization. Plese manually create and make readable and writeable the following directory:
+        $message = "Unable to complete Global Translator initialization. Please manually create and make readable and writeable the following directory:
         <ul><li>".$cachedir."</li></ul>";
       }
     } else if (!is_readable($staledir) || !is_writable($staledir) ){
-      $message = "Unable to complete Global Translator initialization. Plese make readable and writeable the following directory:
+      $message = "Unable to complete Global Translator initialization. Please make readable and writeable the following directory:
       <ul><li>".$staledir."</li></ul>";
     }
   }
@@ -254,11 +264,11 @@ if (isset($_POST['stage'])){
 	  foreach($datafiles as $datafile){
 	  	if(!is_file($datafile)){
 		    if (!gltr_create_file($datafile)){
-					$message .= "Unable to complete Global Translator initialization. Plese create and make readable and writeable the following file:
+					$message .= "Unable to complete Global Translator initialization. Please create and make readable and writeable the following file:
 			    <ul><li>".$datafile."</li></ul><br />";  		
 		    }
 	  	} else if (!is_readable($datafile) || !is_writeable($datafile)){
-				$message .= "Unable to complete Global Translator initialization. Plese make readable and writeable the following file:
+				$message .= "Unable to complete Global Translator initialization. Please make readable and writeable the following file:
 		    <ul><li>".$datafile."</li></ul><br />";  		
 	  	}
 	  }  
@@ -307,7 +317,7 @@ function calculateOptions(lang, selectedItem) {
       break;
     }
   }
-  for (i = 0; i <= flags_num; i++) {
+  for (i = 0; i < flags_num; i++) {
     if (i == 0) {
       opt_text='all the flags in a single row (default)';
     } else if (i == 1) {
@@ -315,11 +325,15 @@ function calculateOptions(lang, selectedItem) {
     } else {
       opt_text= i + ' flags for each row';
     }
+    
+    if (i == 0)
+    	document.forms['form1'].gltr_col_num.options[i]=new Option(opt_text, flags_num);
+    else
     document.forms['form1'].gltr_col_num.options[i]=new Option(opt_text, i);
   }
   
   //I need to cycle again on the options list in order to correctly choose the selected item
-  for (i = 0; i <= flags_num; i++) {
+  for (i = 0; i < flags_num; i++) {
     document.forms['form1'].gltr_col_num.options[i].selected = (selectedItem == i);
   }
 }
@@ -385,7 +399,7 @@ if($message!="") { ?>
   <h2><?php _e('Global Translator ')?><?php echo($gltr_VERSION);?></h2>
   <form id="gltr_form" name="form1" method="post" action="<?php echo $location ?>">
   	<input type="hidden" name="stage" value="process" />
-
+    <input type="hidden" name="gltr_stats" value="<?php echo(($showstats==true)?"show":"hide");?>" />
   	<fieldset class="options">
   		<h3><?php _e('Choose your translation engine') ?></h3>
   		<table width="100%" cellpadding="5" class="editform">
@@ -502,19 +516,33 @@ if($message!="") { ?>
 	        	Schedule a page for a new translation if it has been cached more than 
 	        		<input size="4"  maxlength="5" name="gltr_cache_expire_time" type="text" id="gltr_cache_expire_time" value="<?php echo($gltr_cache_expire_time);?>"/> days ago ("0" means "never").
 	        	<br/>
+
 	        	<h4>Cache statistics</h4>
+            <?php if ($showstats){ 	?>
 	        	<ul>
 	        	<li>Your cache directory currently contains <strong><?php echo($gltr_cached_files_num)?></strong> successfully translated and cached pages.</li>
 	        	<li><strong>Cache directory size</strong>: <?php $size=round($gltr_cache_size/1024/1024,1); echo ($size);?> MB</li>
 	        	<li>Your stale directory currently contains <strong><?php echo($gltr_stale_files_num)?></strong> successfully translated and cached pages waiting for a new translation.</li>
 	        	<li><strong>Stale directory size</strong>: <?php $size=round($gltr_stale_size/1024/1024,1); echo ($size);?> MB</li>
 	        	</ul>
-        
+            <input type="button" onclick="
+              document.forms['form1'].stage.value='change';
+              document.forms['form1'].gltr_stats.value='hide';
+              document.forms['form1'].submit();" 
+              value="&lt;&lt;Hide" />
+            <?php }else{ ?>
+            <input type="button" onclick="
+            	document.forms['form1'].stage.value='change';
+              document.forms['form1'].gltr_stats.value='show';
+              document.forms['form1'].submit();" 
+              value="Show &gt;&gt;" />
+            <?php } ?>
+            <br />
       </td></tr>
   		<tr><td>
         <label>
         
-        <input type="submit"  name="gltr_erase_cache" value="<?php _e('Erase cache') ?> &raquo;" />        
+        <!-- <input type="submit"  name="gltr_erase_cache" value="<?php _e('Erase cache') ?> &raquo;" /> -->        
         </label>
       </td></tr>
       </table>
@@ -526,13 +554,13 @@ if($message!="") { ?>
   		<tr><td>
         <label><?php _e('Allow only a translation request every ') ?>
 	        	<input size="4"  maxlength="5" name="gltr_conn_interval" type="text" id="gltr_conn_interval" value="<?php echo($gltr_conn_interval);?>"/> seconds.</label><br /><br />
-	        	This feature represents the final solution which can definitively prevent your blog from being banned by the translation engines.<br />
+	        	This feature represents the solution which can definitively prevent your blog from being banned by the translation engines.<br />
 	        	For this reason we strongly discourage you to insert an interval value lower than "300" (5 minutes), which should represent an optimal value expecially for high-traffic blogs.<br />
 	        	If your blog is sharing its IP address with other blogs using this plugin, the risk of being banned could come back again: in this case I suggest you to  
-	        	increase the timeout value and wait for a while (some days could be necessary).<br />
+	        	increase the timeout value and wait for a while (some days could be necessary).<br /><br />
 	        	<ul>
 						<?php
-	        	$diff_time = gltr_get_last_cached_file_time();
+	        	//$diff_time = gltr_get_last_cached_file_time();
 
 						if ($diff_time > 0){
 		        	echo ("<li>Latest allowed connection to the translation engine: <strong>");
@@ -555,14 +583,14 @@ if($message!="") { ?>
 						}
 						echo ("</li>");
 						
-						echo ("<li>Translations status: ");	
+						echo ("<li><strong>Translations status</strong>:");	
 						$ban_status = get_option("gltr_translation_status");					
 						if ($ban_status == 'banned'){
 							echo("<strong><font color='red'>Bad or unhandled response from the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine.</font></strong> This could mean that:
-							<ul><li>your blog has been temporarily banned: increase the time interval between the translation requests and wait for some days or switch to another translation engine</li>
-							<li>the translation engine is currently not responding/working: wait for some days or switch to another translation engine</li>
-							<li>the translation engine has changed something (i.e. the translation url): wait for the next release of Global Translator :-)</li>
-							<li>you haven't added the flags widget on your pages: adding the flags bar is mandatory in order to make Global Translator able to work correctly</li></font>");
+							<ul><li>Your blog has been temporarily banned: increase the time interval between the translation requests and wait for some days or switch to another translation engine</li>
+							<li>The translation engine is currently not responding/working: wait for some days or switch to another translation engine</li>
+							<li>The translation engine has changed something (i.e. the translation url): wait for the next release of Global Translator :-)</li>
+							<li>You haven't added the flags widget on your pages: adding the flags bar is mandatory in order to make Global Translator able to work correctly</li></font>");
 						} else if ($ban_status == 'working'){
 							echo("<strong><font color='green'>Working properly</font></strong>");
 						} else {
@@ -577,6 +605,7 @@ if($message!="") { ?>
       </td></tr>
       </table>
     </fieldset>
+
 
   	<fieldset class="options">
   		<h3><?php _e('Bad spiders blocking system') ?></h3>
@@ -595,7 +624,7 @@ if($message!="") { ?>
     </fieldset>
 
   	<fieldset class="options">
-  		<h3><?php _e('Sitemap integration (beta)') ?></h3>
+  		<h3><?php _e('Sitemap integration') ?></h3>
   		<table width="100%" cellpadding="5" class="editform">
   		<tr><td>
   			<?php 
@@ -648,9 +677,9 @@ if($message!="") { ?>
 		</fieldset>
 
 		<fieldset class="options">
-			<h3><?php _e('Informations and support') ?></h3>
-			<p><?php echo str_replace("%s","<a href=\"http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/\">http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/</a>",
-				__("Check %s for updates and comment there if you have any problems / questions / suggestions.")); ?></p>
+			<h3><?php _e('Advanced functions and support') ?></h3>
+			<p><?php echo str_replace("%s","<a href=\"http://www.nothing2hide.net/global-translator-pro/\">http://www.nothing2hide.net/global-translator-pro/</a>",
+				__("Check %s if you need a supported version with more and advanced functions")); ?></p>
 		</fieldset>
   </form>
 </div>

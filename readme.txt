@@ -5,17 +5,17 @@ Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.3
 Tested up to: 2.7
-Stable Tag: 1.2
+Stable Tag: 1.2.1
 
 Automatically translates your blog in 34 different languages!
 
 == Description ==
 
-Global Translator automatically translates your blog in the following 34 different languages:
+Global Translator automatically translates your blog in the following 41 different languages:
 Italian, Korean, Chinese (Simplified), Portuguese, English, German, French, Spanish, Japanese, 
 Arabic, Russian, Greek, Dutch, Bulgarian, Czech, Croatian, Danish, Finnish, Hindi, Polish, Romanian, 
 Swedish, Norwegian, Catalan, Filipino, Hebrew, Indonesian, Latvian, Lithuanian, Serbian, Slovak, 
-Slovenian, Ukrainian, Vietnamese'.
+Slovenian, Ukrainian, Vietnamese,Albanian,Estonian,Galician,Maltese,Thai,Turkish,Hungarian.
 
 The number of available translations will depend on your blog language and the translation engine you will chose to use.
 Main features:
@@ -38,7 +38,7 @@ For the latest information and changelog visit the website
 http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 
 
-**A commercial version with full support and additional features is also available!** 
+**A Pro version with full support and additional features is also available!** 
 Learn more by visiting this page: http://www.nothing2hide.net/global-translator-pro/
 
 
@@ -71,7 +71,7 @@ for your language will appear on your blog.
 
 == Frequently Asked Questions ==
 
-= The translation process takes a lot of time. Why? =
+= The full translation process takes a lot of time. Why? =
 
 In order to prevent from banning by the translation services, only a translation request every 5 minutes will be allowed. This will permit to fully translate
 your blog whithout any interruption; this message will completely disappear when all the pages of your blog will be cached.
@@ -81,8 +81,8 @@ same ip address with other blogs using older versions of Global Translator.
 = "This page has not been translated yet. The translation process could take a while: please come back later." message when trying to access a translated page =
 
 Upgrade to 1.0.8 or later. Starting from 1.0.8, a browser asking for a not yet translated page will be warned and redirected in 5 seconds to the translation service 
-page in order to provide a temporary "backup service". Obviously, when the page is translated and saved on your cache directory, this redirection will disappear and
-the translated and cleaned page will be served by your blog.
+page in order to provide a temporary "backup translation service". Obviously, when the page is translated and saved on your cache directory, this redirection 
+will disappear and the translated and cleaned page will be served by your blog.
 
 = I have a Global Translator version prior than 1.0.5 and Google doesn't translate anymore! =
 
