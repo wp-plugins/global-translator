@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 41 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.2.1
+Version: 1.2.2
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -74,6 +74,13 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.2.3
+- Hacked new Google URL structure
+
+1.2.2
+- Added support for older PHP versions
+
 1.2.1
 - Added seven new languages: Albanian,Estonian,Galician,Maltese,Thai,Turkish,Hungarian
 - Improved caching performances
@@ -365,12 +372,10 @@ function gltr_add_translated_pages_to_sitemap() {
 function gltr_patch_translation_url($res) {
 	
   if (TRANSLATION_ENGINE == 'google'){
-  	$res = str_replace('/translate?','/translate_n?',$res);
     $maincont = gltr_http_get_content($res);
-    //gltr_debug("gltr_patch_translation_url :: $maincont");
     $matches = array();
-    preg_match( '/(http:\/\/[0-9\.]*\/translate_c[^"]*)"/',$maincont,$matches);
-    $res = $matches[1];
+    preg_match( '/(\/translate_p[^"]*)"/',$maincont,$matches);
+    $res = "http://translate.google.com" . $matches[1];
     $res = str_replace('&amp;','&', $res);    
     gltr_debug("gltr_patch_translation_url :: Google Patched: $res");
     

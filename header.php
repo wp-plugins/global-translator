@@ -364,8 +364,9 @@ if(!class_exists("gltr_translation_engine")) {
 
 $googleEngine = new gltr_translation_engine(
 	'google',
-	'http://translate.google.com/translate?hl=en&ie=UTF-8&oe=UTF-8&langpair=${SRCLANG}|${DESTLANG}&u=${URL}&prev=/language_tools',
-	array(
+	//'http://translate.google.com/translate?hl=en&ie=UTF-8&oe=UTF-8&langpair=${SRCLANG}|${DESTLANG}&u=${URL}&prev=/language_tools',
+	'http://translate.google.com/translate_p?hl=en&ie=UTF-8&sl=${SRCLANG}&tl=${DESTLANG}&u=${URL}',
+   array(
 		"/href=[']{1}[^']*u=(.*?)&amp;([^'|#]*)([#]{0,1}[^']*)[']{1}/",
 		"/href=[\"]{1}[^\"]*u=(.*?)&amp;([^\"|#]*)([#]{0,1}[^\"]*)[\"]{1}/"
 		//"/href=[']{1}[^']*u=(.*?)&amp;prev=\/language_tools[^']*([#]{0,1}[^\"]*)[']{1}/",
@@ -2397,16 +2398,30 @@ add_option('gltr_sitemap_integration',false);
 add_option("gltr_last_connection_time",0);
 add_option("gltr_translation_status","unknown");
 add_option("gltr_cache_expire_time",30);
+
 if (function_exists('gzcompress')){
 	add_option("gltr_compress_cache",true);
 } else {
 	add_option("gltr_compress_cache",false);
 }
 
+if (!function_exists('str_ireplace')){
+  function str_ireplace($search,$replace,$subject){
+    $token = chr(1);
+    $haystack = strtolower($subject);
+    $needle = strtolower($search);
+    while (($pos=strpos($haystack,$needle))!==FALSE){
+      $subject = substr_replace($subject,$token,$pos,strlen($search));
+      $haystack = substr_replace($haystack,$token,$pos,strlen($search));
+    }
+    $subject = str_replace($token,$replace,$subject);
+    return $subject;
+  }
+} 
 if( !defined('WP_CONTENT_DIR') ) define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content' );
 $gltr_cache_dir = WP_CONTENT_DIR . "/gt-cache";
 $gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
 $gltr_merged_image=dirname(__file__) . '/gltr_image_map.png';
 
-$gltr_VERSION='1.2.1';
+$gltr_VERSION='1.2.2';
 ?>
