@@ -365,7 +365,7 @@ if(!class_exists("gltr_translation_engine")) {
 $googleEngine = new gltr_translation_engine(
 	'google',
 	//'http://translate.google.com/translate?hl=en&ie=UTF-8&oe=UTF-8&langpair=${SRCLANG}|${DESTLANG}&u=${URL}&prev=/language_tools',
-	'http://translate.google.com/translate_p?hl=en&ie=UTF-8&sl=${SRCLANG}&tl=${DESTLANG}&u=${URL}',
+	'http://translate.google.com/translate?hl=en&ie=UTF-8&sl=${SRCLANG}&tl=${DESTLANG}&u=${URL}',
    array(
 		"/href=[']{1}[^']*u=(.*?)&amp;([^'|#]*)([#]{0,1}[^']*)[']{1}/",
 		"/href=[\"]{1}[^\"]*u=(.*?)&amp;([^\"|#]*)([#]{0,1}[^\"]*)[\"]{1}/"
@@ -2423,5 +2423,5 @@ $gltr_cache_dir = WP_CONTENT_DIR . "/gt-cache";
 $gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
 $gltr_merged_image=dirname(__file__) . '/gltr_image_map.png';
 
-$gltr_VERSION='1.2.2';
+$gltr_VERSION='1.2.2.1';
 ?>
