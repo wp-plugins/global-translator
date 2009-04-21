@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 41 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.2.2.1
+Version: 1.2.3
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -74,6 +74,10 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.2.3
+- Fixed sitemap integration for blogs not installed on the root path
+- Fixed encoding problems related to the introduction of the new Google APIs
 
 1.2.2.1
 - Hacked new Google URL structure
@@ -981,12 +985,15 @@ function gltr_get_cookies() {
 }
 
 function gltr_is_cached($url,$lang){
-	global $gltr_cache_dir;
-	global $gltr_stale_dir;
+	global $gltr_cache_dir, $gltr_stale_dir;
+
+  $url_parts = parse_url($url);
+  $host = 'http://' . $url_parts['host'];
+  $host_escaped = str_replace('/', '\\/', $host);
 
   $cachedir = $gltr_cache_dir."/$lang";
   $staledir = $gltr_stale_dir."/$lang";
-  $uri = preg_replace("/" . BLOG_HOME_ESCAPED . "/", '', $url);
+  $uri = preg_replace("/$host_escaped/", '', $url);
   $hash = gltr_hashReqUri($uri);
   $filename = $cachedir . '/' . $hash;
   $stale_filename = $staledir . '/' . $hash;
