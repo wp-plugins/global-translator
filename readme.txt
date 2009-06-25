@@ -4,8 +4,8 @@ Author: Davide Pozza
 Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.3
-Tested up to: 2.7
-Stable Tag: 1.2.3
+Tested up to: 2.8
+Stable Tag: 1.2.4
 
 Automatically translates your blog in 34 different languages!
 

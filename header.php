@@ -2075,7 +2075,7 @@ $googleEngine = new gltr_translation_engine(
 
 $babelfishEngine = new gltr_translation_engine(
 	'babelfish',
-	'http://babelfish.altavista.com/babelfish/trurl_pagecontent?lp=${SRCLANG}_${DESTLANG}&url=${URL}',
+	'http://babelfish.yahoo.com/babelfish/trurl_pagecontent?lp=${SRCLANG}_${DESTLANG}&url=${URL}',
 	//array("/<a(.*?)href=\"(.*?)url=(.*?)\"([\s|>]{1})/i"),
 	array(
 		"/href=[']{1}[^']*url=(.*?)[']{1}/",
@@ -2152,7 +2152,8 @@ $babelfishEngine = new gltr_translation_engine(
 
 $promtEngine = new gltr_translation_engine(
   'promt',
-  'http://beta.translate.ru/url/translation.aspx?autotranslate=on&sourceURL=${URL}&direction=${SRCLANG}${DESTLANG}',
+  'http://www.online-translator.com/url/translation.aspx?autotranslate=on&sourceURL=${URL}&direction=${SRCLANG}${DESTLANG}',
+  //http://www.online-translator.com//url/translation.aspx?direction=ie&template=General&autotranslate=on&transliterate=&showvariants=&sourceURL=http://www.nothing2hide.net
   //old version 'http://beta.online-translator.com/url/tran_url.asp?prmtlang=en&autotranslate=on&url=${URL}&direction=${SRCLANG}${DESTLANG}',
   //old version 'http://www.online-translator.com/url/tran_url.asp?url=${URL}&direction=${SRCLANG}${DESTLANG}&cp1=UTF-8&cp2=UTF-8&autotranslate=on',
   //array("/href=\"(.*?)url=(.*?)\"([\s|>]{1})/i"),
@@ -2270,7 +2271,7 @@ $gltr_available_engines['freetransl'] = $freetranslationEngine;
 /*Lets add some default options if they don't exist*/
 add_option('gltr_base_lang', 'en');
 add_option('gltr_col_num', '0');
-add_option('gltr_html_bar_tag', 'TABLE');
+add_option('gltr_html_bar_tag', 'MAP');
 add_option('gltr_my_translation_engine', 'google');
 add_option('gltr_preferred_languages', array());
 add_option('gltr_ban_prevention', true);
@@ -2282,7 +2283,7 @@ add_option("gltr_translation_status","unknown");
 add_option("gltr_cache_expire_time",30);
 
 if (function_exists('gzcompress')){
-	add_option("gltr_compress_cache",true);
+	add_option("gltr_compress_cache",false);
 } else {
 	add_option("gltr_compress_cache",false);
 }
@@ -2304,6 +2305,7 @@ if( !defined('WP_CONTENT_DIR') ) define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content
 $gltr_cache_dir = WP_CONTENT_DIR . "/gt-cache";
 $gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
 $gltr_merged_image=dirname(__file__) . '/gltr_image_map.png';
+$gltr_uri_index = array();
 
-$gltr_VERSION='1.2.3';
+$gltr_VERSION='1.2.4';
 ?>
