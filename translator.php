@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 41 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.2.4
+Version: 1.2.5
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -74,6 +74,10 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.2.5
+- updated page cleaning system in order to prevent new Google updates on the HTML sources
+
 1.2.4
 - Fixed trailing slash issue
 - Replaced 404 errors with 302 redicection for better SEO
@@ -408,7 +412,7 @@ function gltr_patch_translation_url($res) {
 function gltr_build_translation_url($srcLang, $destLang, $urlToTransl) {
   global $gltr_engine;
   if (TRANSLATION_ENGINE == 'google'){
-  	$urlToTransl = str_replace(array('?','='),array('%3F','%3D'),$urlToTransl);
+  	$urlToTransl = urlencode($urlToTransl);  
   }else if (TRANSLATION_ENGINE == 'babelfish'){	
 		$urlToTransl = urlencode($urlToTransl);   
 	}
@@ -601,9 +605,9 @@ function gltr_clean_link($matches){
   //global $wp_query;
   //$lang = $wp_query->query_vars['lang'];
   if (TRANSLATION_ENGINE == 'google')
-		return "=\"" . urldecode($matches[1]) . $matches[3] . "\"";
+		return $matches[1] . "=\"" . urldecode($matches[2]) . $matches[4] . "\"";
 	else 
-		return "=\"" . urldecode($matches[1]) . "\"";
+		return $matches[1] . "=\"" . urldecode($matches[2]) . "\"";
 }
 
 function gltr_clean_translated_page($buf, $lang) {
@@ -659,6 +663,7 @@ function gltr_clean_translated_page($buf, $lang) {
     $buf = preg_replace("/\<div(.*)http:\/\/www\.freetranslation\.com\/images\/logo\.gif(.*)\<\/div\>/i", "", $buf);
     $buf = str_replace(array("{L","L}"), array("",""), $buf);
   } else if (TRANSLATION_ENGINE == 'google') {
+    $buf = preg_replace("/<iframe src=\"http:\/\/translate\.google\.com\/translate_un[^>]*><\/iframe>/i", "",$buf);
     $buf = preg_replace("/<script>[^<]*<\/script>[^<]*<script src=\"[^\"]*translate_c.js\"><\/script>[^<]*<script>[^<]*_intlStrings[^<]*<\/script>[^<]*<style type=[\"]{0,1}text\/css[\"]{0,1}>\.google-src-text[^<]*<\/style>/i", "",$buf);
     $buf = preg_replace("/_setupIW\(\);_csi\([^\)]*\);/","",$buf);
     $buf = preg_replace("/onmouseout=[\"]{0,1}_tipoff\(\)[\"]{0,1}/i", "",$buf);

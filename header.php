@@ -247,12 +247,15 @@ if(!class_exists("gltr_translation_engine")) {
 $googleEngine = new gltr_translation_engine(
 	'google',
 	//'http://translate.google.com/translate?hl=en&ie=UTF-8&oe=UTF-8&langpair=${SRCLANG}|${DESTLANG}&u=${URL}&prev=/language_tools',
-	'http://translate.google.com/translate?hl=en&ie=UTF-8&sl=${SRCLANG}&tl=${DESTLANG}&u=${URL}',
+	'http://translate.google.com/translate?hl=en&sl=${SRCLANG}&tl=${DESTLANG}&u=${URL}',
    array(
-		"/href=[']{1}[^']*u=(.*?)&amp;([^'|#]*)([#]{0,1}[^']*)[']{1}/",
-		"/href=[\"]{1}[^\"]*u=(.*?)&amp;([^\"|#]*)([#]{0,1}[^\"]*)[\"]{1}/"
-		//"/href=[']{1}[^']*u=(.*?)&amp;prev=\/language_tools[^']*([#]{0,1}[^\"]*)[']{1}/",
-		//"/href=[\"]{1}[^\"]*u=(.*?)&amp;prev=\/language_tools[^\"]*([#]{0,1}[^\"]*)[\"]{1}/"
+    "/(src)=[^>]*u=(.*?)&amp;([^#|>]*)([#]{0,1}[^>]*)/i",
+    "/(src)=[^\s]*u=(.*?)&amp;([^\s|#]*)([#]{0,1}[^\s|>]*)[\s]{1}/",
+    "/(href)=[^>]*u=(.*?)&amp;([^#|>]*)([#]{0,1}[^>]*)/i",
+    "/(href)=[^\s]*u=(.*?)&amp;([^\s|#]*)([#]{0,1}[^\s|>]*)[\s]{1}/"
+    //"/=[^>]*u=(.*?)&amp;([^\"|#]*)([#]{0,1}[^\"]*)[>]{1}/"
+	  //"/=[']{1}[^']*u=(.*?)&amp;([^'|#]*)([#]{0,1}[^']*)[']{1}/",
+		//"/=[\"]{1}[^\"]*u=(.*?)&amp;([^\"|#]*)([#]{0,1}[^\"]*)[\"]{1}/"
 	),
 	"href=\"\\1\" ",
 	array(
@@ -2307,5 +2310,5 @@ $gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
 $gltr_merged_image=dirname(__file__) . '/gltr_image_map.png';
 $gltr_uri_index = array();
 
-$gltr_VERSION='1.2.4';
+$gltr_VERSION='1.2.5';
 ?>
