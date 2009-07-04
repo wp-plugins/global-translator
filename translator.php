@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 41 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.2.5
+Version: 1.2.5.1
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
@@ -74,6 +74,9 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.2.5.1
+- some fixes on the new cleaning system
 
 1.2.5
 - updated page cleaning system in order to prevent new Google updates on the HTML sources
@@ -605,9 +608,9 @@ function gltr_clean_link($matches){
   //global $wp_query;
   //$lang = $wp_query->query_vars['lang'];
   if (TRANSLATION_ENGINE == 'google')
-		return $matches[1] . "=\"" . urldecode($matches[2]) . $matches[4] . "\"";
+		return $matches[1] . "=\"" . urldecode($matches[3]) . $matches[5] . "\"";
 	else 
-		return $matches[1] . "=\"" . urldecode($matches[2]) . "\"";
+		return $matches[1] . "=\"" . urldecode($matches[3]) . "\"";
 }
 
 function gltr_clean_translated_page($buf, $lang) {
