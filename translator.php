@@ -3,10 +3,10 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 41 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.2.5.1
+Version: 1.2.6
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
-Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
+Disclaimer: Use at your own risk. No warranty expressed or implied is provided. The author will never be liable for any loss of profit, physical or psychical damage, legal problems. The author disclaims any responsibility for any action of final users. It is the final user's responsibility to obey all applicable local, state, and federal laws.
 
 */
 
@@ -26,6 +26,8 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+
+
 
 /* Credits:
 Special thanks also to: 
@@ -74,6 +76,11 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.2.6
+- Improvements on link cleaning
+- default cache expire time switched to 15 days
+- replaced 503 HTTP code ("Network Temporarily Unreachable") with a 302 redirect on not yet translated pages in order to remove the warning messages on GooGle WebMaster Tool
 
 1.2.5.1
 - some fixes on the new cleaning system
@@ -339,6 +346,12 @@ function gltr_translator_init() {
   if (REWRITEON) {
     add_filter('generate_rewrite_rules', 'gltr_translations_rewrite');
   }
+  
+	if (isset($_GET['gltr_redir'])){
+		$resource = urldecode($_GET['gltr_redir']);
+		gltr_debug("gltr_translator_init :: found gltr_redir=$resource");
+		gltr_make_server_redirect_page($resource);
+	}
 }
 
 function gltr_add_translated_pages_to_sitemap() {
@@ -456,21 +469,34 @@ function gltr_clean_url_to_translate(){
 }
 
 function gltr_make_server_redirect_page($resource){
-	$unavail =
-		'<html><head><title>Translation not available</title>
-		<style>html,body {font-family: arial, verdana, sans-serif; font-size: 14px;margin-top:0px; margin-bottom:0px; height:100%;}</style></head>
-		<body><center><br /><br /><b>This page has not been translated yet.<br /><br />The translation process could take a while: in the meantime a semi-automatic translation will be provided in a few seconds.</b><br /><br /><a href="'.get_settings('home').'">Home page</a></center>
-		<script type="text/javascript"><!--
-		setTimeout("Redirect()",5000);
-		function Redirect(){
-		 location.href = "{RESOURCE}";
-		}
-		// --></script></body></html>';
-
-  header('HTTP/1.1 503 Service Temporarily Unavailable');//thanks Martin!
-  header('Retry-After: 3600');     
-  $message = str_replace('{RESOURCE}',$resource,$unavail);   
+	if (isset($_GET['gltr_redir'])){		
+		$unavail =
+			'<html><head><title>Translation not available</title>
+			<META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
+			<style>html,body {font-family: arial, verdana, sans-serif; font-size: 14px;margin-top:0px; margin-bottom:0px; height:100%;}</style></head>
+			<body><center><br /><br /><b>This page has not been translated yet.<br /><br />The translation process could take a while: in the meantime a semi-automatic translation will be provided in a few seconds.</b><br /><br /><a href="'.get_settings('home').'">Home page</a></center>
+			<script type="text/javascript"><!--
+			setTimeout("Redirect()",5000);
+			function Redirect(){
+			 location.href = "{RESOURCE}";
+			}
+			// --></script></body></html>';
+	  $message = str_replace('{RESOURCE}',$resource,$unavail);   
+	} else {
+		$redirect = gltr_add_get_param(gltr_get_self_url(), 'gltr_redir', urlencode($resource));
+		gltr_debug("gltr_make_server_redirect_page :: redirecting to $redirect");
+		header("Location: $redirect", TRUE, 302);	
+		die();
+  }
   return $message;
+}
+
+function gltr_add_get_param($url,$param, $value){
+  if (strpos($url,'?')===false)
+    $url .= "?$param=$value";
+  else
+    $url .= "&$param=$value";
+  return $url;
 }
 
 function gltr_translate($lang) {
@@ -605,12 +631,13 @@ function gltr_is_connection_allowed(){
 }
 
 function gltr_clean_link($matches){
-  //global $wp_query;
-  //$lang = $wp_query->query_vars['lang'];
-  if (TRANSLATION_ENGINE == 'google')
-		return $matches[1] . "=\"" . urldecode($matches[3]) . $matches[5] . "\"";
-	else 
-		return $matches[1] . "=\"" . urldecode($matches[3]) . "\"";
+  if (TRANSLATION_ENGINE == 'google'){
+    $res = "=\"" . urldecode($matches[1]) . $matches[3] . "\"";
+    if ($matches[4] == '>') $res .= ">";
+  } else {
+    $res = "=\"" . urldecode($matches[1]) . "\"";
+  }
+  return $res;
 }
 
 function gltr_clean_translated_page($buf, $lang) {
