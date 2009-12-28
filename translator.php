@@ -2,8 +2,8 @@
 /*
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
-Description: Automatically translates a blog in 41 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.2.6
+Description: Automatically translates a blog in 48 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
+Version: 1.2.7
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided. The author will never be liable for any loss of profit, physical or psychical damage, legal problems. The author disclaims any responsibility for any action of final users. It is the final user's responsibility to obey all applicable local, state, and federal laws.
@@ -76,6 +76,8 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+1.2.7
+- Added 6 new languages
 
 1.2.6
 - Improvements on link cleaning
@@ -287,9 +289,9 @@ define('FLAG_BAR_BEGIN', '<!--FLAG_BAR_BEGIN-->');
 define('FLAG_BAR_END', '<!--FLAG_BAR_END-->');
 define('USER_AGENT','Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.2.1) Gecko/20021204');
 
-define('LANGS_PATTERN', 'it|ko|zh-CN|zh-TW|pt|en|de|fr|es|ja|ar|ru|el|nl|zh|zt|no|bg|cs|hr|da|fi|hi|pl|ro|sv|ca|tl|iw|id|lv|lt|sr|sk|sl|uk|vi|sq|et|gl|mt|th|tr|hu');
-define('LANGS_PATTERN_WITH_SLASHES', '/it/|/ko/|/zh-CN/|/zh-TW/|/pt/|/en/|/de/|/fr/|/es/|/ja/|/ar/|/ru/|/el/|/nl/|/zh/|/zt/|/no/|/bg/|/cs/|/hr/|/da/|/fi/|/hi/|/pl/|/ro/|/sv/|/ca/|/tl/|/iw/|/id/|/lv/|/lt/|/sr/|/sk/|/sl/|/uk/|/vi/|/sq/|/et/|/gl/|/mt/|/th/|/tr/|/hu/');
-define('LANGS_PATTERN_WITHOUT_FINAL_SLASH', '/it|/ko|/zh-CN|/zh-TW|/pt|/en|/de|/fr|/es|/ja|/ar|/ru|/el|/nl|/zh|/zt|/no|/bg|/cs|/hr|/da|/fi|/hi|/pl|/ro|/sv|/ca|/tl|/iw|/id|/lv|/lt|/sr|/sk|/sl|/uk|/vi|/sq|/et|/gl|/mt|/th|/tr|/hu');
+define('LANGS_PATTERN', 'it|ko|zh-CN|zh-TW|pt|en|de|fr|es|ja|ar|ru|el|nl|zh|zt|no|bg|cs|hr|da|fi|hi|pl|ro|sv|ca|tl|iw|id|lv|lt|sr|sk|sl|uk|vi|sq|et|gl|mt|th|tr|hu|be|ga|is|mk|ms|fa');
+define('LANGS_PATTERN_WITH_SLASHES', '/it/|/ko/|/zh-CN/|/zh-TW/|/pt/|/en/|/de/|/fr/|/es/|/ja/|/ar/|/ru/|/el/|/nl/|/zh/|/zt/|/no/|/bg/|/cs/|/hr/|/da/|/fi/|/hi/|/pl/|/ro/|/sv/|/ca/|/tl/|/iw/|/id/|/lv/|/lt/|/sr/|/sk/|/sl/|/uk/|/vi/|/sq/|/et/|/gl/|/mt/|/th/|/tr/|/hu/|/be/|/ga/|/is/|/mk/|/ms/|/fa/');
+define('LANGS_PATTERN_WITHOUT_FINAL_SLASH', '/it|/ko|/zh-CN|/zh-TW|/pt|/en|/de|/fr|/es|/ja|/ar|/ru|/el|/nl|/zh|/zt|/no|/bg|/cs|/hr|/da|/fi|/hi|/pl|/ro|/sv|/ca|/tl|/iw|/id|/lv|/lt|/sr|/sk|/sl|/uk|/vi|/sq|/et|/gl|/mt|/th|/tr|/hu|/be|/ga|/is|/mk|/ms|/fa');
 
 
 define('CONN_INTERVAL', get_option('gltr_conn_interval'));
@@ -674,11 +676,11 @@ function gltr_clean_translated_page($buf, $lang) {
     }
   } else {
     $pattern = "/<a([^>]*)href=\"" . $blog_home_esc . "\/\?(((?![\"])(?!\/trackback)(?!\/feed)" . gltr_get_extensions_skip_pattern() . ".)*)\"([^>]*)>/i";
-    $repl = "<a\\1href=\"" . $blog_home . "?\\2&lang=$lang\" \\4>";
+    $repl = "<a\\1href=\"" . $blog_home . "?\\2&gtlang=$lang\" \\4>";
     $buf = preg_replace($pattern, $repl, $buf);
     
     $pattern = "/<a([^>]*)href=\"" . $blog_home_esc . "[\/]{0,1}\"([^>]*)>/i";
-    $repl = "<a\\1href=\"" . $blog_home . "?lang=$lang\" \\2>";
+    $repl = "<a\\1href=\"" . $blog_home . "?gtlang=$lang\" \\2>";
     $buf = preg_replace($pattern, $repl, $buf);
   }
 
@@ -942,10 +944,11 @@ function gltr_get_translated_url($language, $url) {
     if ($contains_index){
       $blog_home_esc .= '\\/index.php';
     }
-		$pattern = '/' . $blog_home_esc . '\\/((' . LANGS_PATTERN . ')[\\/])*(.*)/';
+		$pattern1 = '/' . $blog_home_esc . '\\/(' . LANGS_PATTERN . ')$/';
+		$pattern2 = '/' . $blog_home_esc . '\\/((' . LANGS_PATTERN . ')[\\/])*(.*)/';
 
-    if (preg_match($pattern, $url)) {
-      $uri = preg_replace($pattern, '\\3', $url);
+    if (!preg_match($pattern1, $url) && preg_match($pattern2, $url)) {
+      $uri = preg_replace($pattern2, '\\3', $url);
     } else {
       $uri = '';
     }
@@ -960,19 +963,19 @@ function gltr_get_translated_url($language, $url) {
       $url = $blog_home . '/' . $language . '/' . $uri;
   } else {
     //REWRITEOFF
-    $pattern1 = '/(.*)([&|\?]{1})lang=(' . LANGS_PATTERN . ')(.*)/';
-    $pattern2 = '/(.*[&|\?]{1})lang=(' . LANGS_PATTERN . ')(.*)/';
+    $pattern1 = '/(.*)([&|\?]{1})gtlang=(' . LANGS_PATTERN . ')(.*)/';
+    $pattern2 = '/(.*[&|\?]{1})gtlang=(' . LANGS_PATTERN . ')(.*)/';
 
     if ($language == BASE_LANG) {
       $url = preg_replace($pattern1, '\\1\\4', $url);
     } else
       if (preg_match($pattern2, $url)) {
-        $url = preg_replace($pattern2, '\\1lang=' . $language . '\\3', $url);
+        $url = preg_replace($pattern2, '\\1gtlang=' . $language . '\\3', $url);
       } else {
         if (strpos($url,'?')===false)
-          $url .= '?lang=' . $language;
+          $url .= '?gtlang=' . $language;
         else
-          $url .= '&lang=' . $language;
+          $url .= '&gtlang=' . $language;
       }
 
   }
@@ -1007,8 +1010,8 @@ function gltr_get_self_url() {
 //rewrite rules definitions
 function gltr_translations_rewrite($wp_rewrite) {
   $translations_rules = array('^(' . LANGS_PATTERN . ')$' =>
-    'index.php?lang=$matches[1]', '^(' . LANGS_PATTERN . ')/(.+?)$' =>
-    'index.php?lang=$matches[1]&url=$matches[2]');
+    'index.php?gtlang=$matches[1]', '^(' . LANGS_PATTERN . ')/(.+?)$' =>
+    'index.php?gtlang=$matches[1]&url=$matches[2]');
   $wp_rewrite->rules = $translations_rules + $wp_rewrite->rules;
 }
 
@@ -1187,7 +1190,7 @@ function gltr_filter_content($content) {
 }
 */
 function gltr_insert_my_rewrite_query_vars($vars) {
-  array_push($vars, 'lang', 'url');
+  array_push($vars, 'gtlang', 'gturl');
   return $vars;
 }
 
@@ -1195,10 +1198,9 @@ function gltr_insert_my_rewrite_parse_query($query) {
   global $gltr_cache_dir,$gltr_is_translated_page;
   $gltr_result = "";
 
-  		  
-  if (isset($query->query_vars['lang'])) {
-  	$lang = $query->query_vars['lang'];
-    $url = $query->query_vars['url'];
+  if (isset($query->query_vars['gtlang'])) {
+  	$lang = $query->query_vars['gtlang'];
+    $url = $query->query_vars['gturl'];
 
     if (empty($url)) {
       $url = '';
