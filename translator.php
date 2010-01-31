@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 48 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.2.7
+Version: 1.2.8
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided. The author will never be liable for any loss of profit, physical or psychical damage, legal problems. The author disclaims any responsibility for any action of final users. It is the final user's responsibility to obey all applicable local, state, and federal laws.
@@ -76,6 +76,10 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.2.8
+- fixed some 404 issues reported by Google WebMaster and related to bad parameters attached to the url (usg and rurl)
+
 1.2.7
 - Added 6 new languages
 
@@ -345,15 +349,33 @@ function gltr_translator_init() {
     define('KEYWORDS_REWRITEON', '0');
     define('LINKBASE', '');
   }
+  
+  if (isset($_GET['rurl']) || isset($_GET['usg']) || strstr(gltr_get_self_url(), "/&rurl")){
+    gltr_debug("gltr_translator_init :: stripping usg or rurl: " . gltr_get_self_url());          
+    $url = gltr_strip_get_param(gltr_get_self_url(),array('rurl','usg'));
+    header( "HTTP/1.1 301 Moved Permanently" );
+    header( "Location: $url" );
+    die();  
+  } 
+  
   if (REWRITEON) {
     add_filter('generate_rewrite_rules', 'gltr_translations_rewrite');
   }
-  
+  /*
 	if (isset($_GET['gltr_redir'])){
 		$resource = urldecode($_GET['gltr_redir']);
 		gltr_debug("gltr_translator_init :: found gltr_redir=$resource");
 		gltr_make_server_redirect_page($resource);
 	}
+	*/
+}
+
+function gltr_strip_get_param($url,$params){
+  if (!is_array($params)) $params = array($params);
+  foreach($params as $param){    
+   $url = preg_replace("/[\?&]{1}$param=[^&?]*/i", "", $url);
+  }
+  return $url;
 }
 
 function gltr_add_translated_pages_to_sitemap() {
@@ -912,7 +934,7 @@ function gltr_get_flags_bar() {
   //you a backlink to my website (http://www.nothing2hide.net). This will be very appreciated!! 
   //Thanks!    
   //
-  $n2hlink = "<a style=\"font-size:9px;\" href=\"http://www.nothing2hide.net\">By N2H</a>";
+  $n2hlink = "<a style=\"font-size:9px;\" href=\"http://www.n2h.it\">By N2H</a>";
   if (HTML_BAR_TAG == 'MAP'){
     $buf .="</map>";
     $buf .= "<img style='border:0px;' src='$merged_image_url' usemap='#gltr_flags_map'/></div>";
@@ -1092,7 +1114,7 @@ function gltr_get_page_content($lang, $url) {
     $page = gltr_load_cached_page($filename);
     $page .= "<!--CACHED VERSION ($hash)-->";
     
-    $page = gltr_insert_flag_bar($page); //could be skipped 
+    $page = gltr_insert_flag_bar($page); //could be skipped    
 		//check if needs to be scheduled for a new translation
 		$filetime_days = (time() - filemtime($filename)) / 86400;
 		

@@ -653,5 +653,5 @@ $gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
 $gltr_merged_image=dirname(__file__) . '/gltr_image_map.png';
 $gltr_uri_index = array();
 
-$gltr_VERSION='1.2.7';
+$gltr_VERSION='1.2.8';
 ?>
