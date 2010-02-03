@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 48 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.2.8
+Version: 1.2.9
 Author: Davide Pozza
 Author URI: http://www.nothing2hide.net/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided. The author will never be liable for any loss of profit, physical or psychical damage, legal problems. The author disclaims any responsibility for any action of final users. It is the final user's responsibility to obey all applicable local, state, and federal laws.
@@ -493,6 +493,7 @@ function gltr_clean_url_to_translate(){
 }
 
 function gltr_make_server_redirect_page($resource){
+/*
 	if (isset($_GET['gltr_redir'])){		
 		$unavail =
 			'<html><head><title>Translation not available</title>
@@ -513,6 +514,10 @@ function gltr_make_server_redirect_page($resource){
 		die();
   }
   return $message;
+*/  
+	gltr_debug("gltr_make_server_redirect_page :: redirecting to $resource");
+	header("Location: $resource", TRUE, 302);	
+	die();
 }
 
 function gltr_add_get_param($url,$param, $value){
@@ -718,6 +723,7 @@ function gltr_clean_translated_page($buf, $lang) {
     $buf = str_replace(array("{L","L}"), array("",""), $buf);
   } else if (TRANSLATION_ENGINE == 'google') {
     $buf = preg_replace("/<iframe src=\"http:\/\/translate\.google\.com\/translate_un[^>]*><\/iframe>/i", "",$buf);
+    $buf = preg_replace("/<iframe src=\"[^\"]*rurl=[^>]*><\/iframe>/i", "",$buf);
     $buf = preg_replace("/<script>[^<]*<\/script>[^<]*<script src=\"[^\"]*translate_c.js\"><\/script>[^<]*<script>[^<]*_intlStrings[^<]*<\/script>[^<]*<style type=[\"]{0,1}text\/css[\"]{0,1}>\.google-src-text[^<]*<\/style>/i", "",$buf);
     $buf = preg_replace("/_setupIW\(\);_csi\([^\)]*\);/","",$buf);
     $buf = preg_replace("/onmouseout=[\"]{0,1}_tipoff\(\)[\"]{0,1}/i", "",$buf);
@@ -1115,6 +1121,7 @@ function gltr_get_page_content($lang, $url) {
     $page .= "<!--CACHED VERSION ($hash)-->";
     
     $page = gltr_insert_flag_bar($page); //could be skipped    
+    $page = preg_replace("/<iframe src=\"[^\"]*rurl=[^>]*><\/iframe>/i", "",$page);
 		//check if needs to be scheduled for a new translation
 		$filetime_days = (time() - filemtime($filename)) / 86400;
 		

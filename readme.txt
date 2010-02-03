@@ -5,7 +5,7 @@ Contributors:
 Donate link: http://www.nothing2hide.net/donate_global_translator.php
 Requires at least: 2.3
 Tested up to: 2.9
-Stable Tag: 1.2.8
+Stable Tag: 1.2.9
 
 Automatically translates your blog in 34 different languages!
 
@@ -78,17 +78,17 @@ your blog whithout any interruption; this message will completely disappear when
 Remember that this message will also appear if you're currently being banned by the translation engine: this could happen if for example your blog shares the
 same ip address with other blogs using older versions of Global Translator.
 
+= When I click on a flag I'm just redirected to Google Translation Services
+
+Don't worry: this is just a TEMPORARY redirect which will disappear when the page will be cached and saved on your server: in fact, in order to avoid banning issues, the plugin translates and caches a page every 5 minutes
+
 = "This page has not been translated yet. The translation process could take a while: please come back later." message when trying to access a translated page =
 
 Upgrade to 1.0.8 or later. Starting from 1.0.8, a browser asking for a not yet translated page will be warned and redirected in 5 seconds to the translation service 
 page in order to provide a temporary "backup translation service". Obviously, when the page is translated and saved on your cache directory, this redirection 
-will disappear and the translated and cleaned page will be served by your blog.
+will disappear and the translated and cleaned page will be served by your blog. Starting from version 1.2.9, this message has been removed
 
-= I have a Global Translator version prior than 1.0.5 and Google doesn't translate anymore! =
-
-Starting from 27th of August 2008, Google has introduced a block in order to prevent not human translation requests: just upgrade to 1.0.5 or later.
-
-= White page or Page Not Found (404) when clicking on a translation flag =
+= When clicking on a translation flag the page doesn't translate =
 
 This could be due to a change of the permalinks structure of your blog, to a conflict with another plugin or to a custom 
 .htaccess file which doesn't permit Global Translator to add its custom permalink rules. Try to refresh the Global Translator 
@@ -96,13 +96,9 @@ rewrite rules just pressing the "Update Options" button from the Global Translat
 try also to deactivate all the other existing plugins and check your .htaccess file and comment out all the non-standard rewrite rules. 
 If you discover a conflicting plugin please send me an email (davide at nothing2hide.net).
 
-= "Sorry, the translation engine is temporarily not available. Please try again later" message when using Google Translations engine =
-
-You're using an old version of the plugin. Please upgrade to 1.0 or later.
-
 = The translated page has a bad/broken layout =
 
-This is due to the translation engine action. I cannot do anything in order to prevent this problem :-)
+This is due to the translation engine action. I cannot do anything in order to prevent this problems :-)
 I suggest you to try all the translation engines in order to choose the best one for your blog layout
 
 = I've just changed my permalinks structure or just upgraded Wordpress to a newer version and Global Translator doesn't translate anymore =
@@ -122,3 +118,7 @@ Disallow: /de/*
 = How can I discover if my blog is currently banned by the translation engine? =
 
 Go to the Global Translator admin page. If your blog has been temporarily banned, a warning message will appear inside the "Translation engine connection" section.
+
+= I've just removed the plugin. How to fix all the SEO issues related to the translated pages which are not jet available? =
+Put a rewrite rule like this on your .htaccess:
+RedirectMatch 301 ^/(it|ko|zh-CN|zh-TW|pt|en|de|fr|es|ja|ar|ru|el|nl|zh|zt|no|bg|cs|hr|da|fi|hi|pl|ro|sv|ca|tl|iw|id|lv|lt|sr|sk|sl|uk|vi|sq|et|gl|mt|th|tr|hu|be|ga|is|mk|ms|fa)/(.*)$ http://www.mysite.com/$2
