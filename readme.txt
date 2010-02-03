@@ -78,7 +78,7 @@ your blog whithout any interruption; this message will completely disappear when
 Remember that this message will also appear if you're currently being banned by the translation engine: this could happen if for example your blog shares the
 same ip address with other blogs using older versions of Global Translator.
 
-= When I click on a flag I'm just redirected to Google Translation Services
+= When I click on a flag I'm just redirected to Google Translation Services =
 
 Don't worry: this is just a TEMPORARY redirect which will disappear when the page will be cached and saved on your server: in fact, in order to avoid banning issues, the plugin translates and caches a page every 5 minutes
 
