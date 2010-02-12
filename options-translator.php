@@ -107,7 +107,10 @@ if (isset($_POST['stage'])){
 	else 
 		$gltr_compress_cache = false;
 	
-	
+  if(isset($_POST['gltr_use_302'])) 
+    $gltr_use_302 = true; 
+  else 
+    $gltr_use_302 = false;	
 	
 	if ('change' == $_POST['stage']) {
 		//recalculate some things
@@ -187,8 +190,12 @@ if (isset($_POST['stage'])){
 	        update_option('gltr_enable_debug', true);
 	      else
 	        update_option('gltr_enable_debug', false);
-	
-	
+	          
+        if(isset($_POST['gltr_use_302']))
+          update_option('gltr_use_302', true);
+        else
+          update_option('gltr_use_302', false);
+          	
 				$wp_rewrite->flush_rules();
 	      $message = "Options saved.";
 	    }
@@ -208,7 +215,7 @@ if (isset($_POST['stage'])){
 	$gltr_enable_debug = get_option('gltr_enable_debug');
 	$gltr_conn_interval = get_option('gltr_conn_interval');
 	$gltr_cache_expire_time = get_option('gltr_cache_expire_time');
-
+	$gltr_use_302 = get_option('gltr_use_302');
 
 	$gltr_current_engine = $gltr_available_engines[$gltr_my_translation_engine];
 	$gltr_lang_matrix = $gltr_current_engine->get_languages_matrix();
@@ -397,6 +404,19 @@ if($message!="") { ?>
 <form name="test"></form>
 <div class="wrap">
   <h2><?php _e('Global Translator ')?><?php echo($gltr_VERSION);?></h2>
+  
+	<div style="padding-bottom:10px;margin-top:5px;margin-bottom:10px;border-bottom:1px solid #CCCCCC;">
+	by <strong>Davide</strong> of <strong><a target="_blank" href="http://www.n2h.it">N2H</a></strong><br/>
+	<p>Need a <strong>powerful, modal and unblocking popup</strong> for increasing subscribers or promoting your products? Try my <strong><a target="_blank" href="http://wordpress.org/extend/plugins/wp-super-popup/">WP Super Popup Plugin</a></strong></p>
+	<p> 
+	<strong><a href="http://www.n2h.it/donate_global_translator.php">Donations</a></strong> are welcome and help me to continue support and development of this <i>free</i> software! 
+	</p>
+	<p> 
+	Need more and advanced functions (like a better translation speed) ? Check now <strong><a href="http://www.n2h.it/global-translator-pro/">Global Translator PRO</a></strong>!
+	</p>
+
+	</div>
+
   <form id="gltr_form" name="form1" method="post" action="<?php echo $location ?>">
   	<input type="hidden" name="stage" value="process" />
     <input type="hidden" name="gltr_stats" value="<?php echo(($showstats==true)?"show":"hide");?>" />
@@ -453,25 +473,31 @@ if($message!="") { ?>
           </label>
         </td></tr>
         <tr><td><label><?php _e('Choose which translations you want to make available for your visitors:') ?><br/>
-        	<table border="0">
+
+        </td></tr></table>
+
+
+        <div>
+        <ul style="list-style-image: none; list-style-position:outside; list-style-type:none;">
         <?php    
         foreach($gltr_lang_matrix as $key => $langs){
           if ($gltr_base_lang == $key) {
-          	$i = 0;
-          	foreach($langs as $lang_key => $lang_value){
-          		if ($gltr_base_lang == $lang_key) continue;
-          		$chk_val = "";
-          		if (count ($gltr_preferred_languages) == 0 || in_array($lang_key, $gltr_preferred_languages) ) 
-          			$chk_val = "checked";
-          		echo '<tr><td><input type="checkbox" name="gltr_preferred_languages[' . $i . ']" ' . $chk_val . ' value="' . $lang_key . '"></td>
-          		<td><img src="' . gltr_get_flag_image($lang_key) . '"/></td><td>' . $lang_value . '</td></tr>';
-          		$i++;
-          	}
+            $i = 0;
+            foreach($langs as $lang_key => $lang_value){
+              if ($gltr_base_lang == $lang_key) continue;
+              $chk_val = "";
+              if (count ($gltr_preferred_languages) == 0 || in_array($lang_key, $gltr_preferred_languages) ) 
+                $chk_val = "checked";
+              echo '<li style="float:left;width:30%;"><input type="checkbox" name="gltr_preferred_languages[' . $i . ']" ' . $chk_val . ' value="' . $lang_key . '">
+              <img src="' . gltr_get_flag_image($lang_key) . '"/></td><td>' . $lang_value . '&nbsp;(<strong>'.$lang_key.'</strong>)</li>';
+              $i++;
+            }
           }
         }
         ?>
-        </table>
-        </td></tr></table>
+        </ul>
+        </div>
+
      </fieldset>
 
   	<fieldset class="options">
@@ -589,7 +615,6 @@ if($message!="") { ?>
 							echo("<strong><font color='red'>Bad or unhandled response from the '".strtoupper(get_option('gltr_my_translation_engine'))."' translation engine.</font></strong> This could mean that:
 							<ul><li>Your blog has been temporarily banned: increase the time interval between the translation requests and wait for some days or switch to another translation engine</li>
 							<li>The translation engine is currently not responding/working: wait for some days or switch to another translation engine</li>
-							<li>The translation engine has changed something (i.e. the translation url): wait for the next release of Global Translator :-)</li>
 							<li>You haven't added the flags widget on your pages: adding the flags bar is mandatory in order to make Global Translator able to work correctly</li></font>");
 						} else if ($ban_status == 'working'){
 							echo("<strong><font color='green'>Working properly</font></strong>");
@@ -606,6 +631,21 @@ if($message!="") { ?>
       </table>
     </fieldset>
 
+    <fieldset class="options">
+      <h3><?php _e('Not yet translated pages management') ?></h3>
+      <table width="100%" cellpadding="5" class="editform">
+      <tr><td>
+        <label>
+        <input name="gltr_use_302" type="checkbox" id="gltr_use_302" 
+            <?php if($gltr_use_302 == TRUE) {?> checked="checked" <?php } ?> />
+        <?php _e('Use an HTTP 302 redirect instead of a HTTP 503 Error Code for not yet translated pages.<br/> <br/>
+        The 302 HTTP redirect doesn\'t generate any warning on Google Webmaster Tools but causes a slower indexing speed for the translated pages.<br/> 
+        The 503 HTTP Error Code ("Service Temporary Unreachable") could generate a lot of warnings on Google Webmaster 
+        Tools but grants a faster indexing speed.') ?>
+        </label>
+      </td></tr>
+      </table>
+    </fieldset>
 
   	<fieldset class="options">
   		<h3><?php _e('Bad spiders blocking system') ?></h3>
@@ -668,19 +708,6 @@ if($message!="") { ?>
     <p class="submit">
       <input type="submit" name="gltr_save" value="<?php _e('Update options') ?> &raquo;" />
     </p>
-		<br /><br />
-		<fieldset class="options">
-			<h3><?php _e('Thanks for using this plugin!') ?></h3>
-				<strong><p><?php echo __('If you are satisfied with the results, isn\'t it worth at least one dollar? 
-					<a href="http://www.nothing2hide.net/donate_global_translator.php">Donations</a> help me to continue support and development of this <i>free</i> software! '); ?> 
-					</p></strong>
-		</fieldset>
-
-		<fieldset class="options">
-			<h3><?php _e('Advanced functions and support') ?></h3>
-			<p><?php echo str_replace("%s","<a href=\"http://www.nothing2hide.net/global-translator-pro/\">http://www.nothing2hide.net/global-translator-pro/</a>",
-				__("Check %s if you need a supported version with more and advanced functions")); ?></p>
-		</fieldset>
   </form>
 </div>
 

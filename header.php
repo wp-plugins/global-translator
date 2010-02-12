@@ -627,6 +627,7 @@ add_option('gltr_sitemap_integration',false);
 add_option("gltr_last_connection_time",0);
 add_option("gltr_translation_status","unknown");
 add_option("gltr_cache_expire_time",15);
+add_option('gltr_use_302',false);
 
 if (function_exists('gzcompress')){
 	add_option("gltr_compress_cache",false);
@@ -653,5 +654,5 @@ $gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
 $gltr_merged_image=dirname(__file__) . '/gltr_image_map.png';
 $gltr_uri_index = array();
 
-$gltr_VERSION='1.2.9';
+$gltr_VERSION='1.3';
 ?>

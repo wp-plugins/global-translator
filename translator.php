@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: Global Translator
-Plugin URI: http://www.nothing2hide.net/wp-plugins/wordpress-global-translator-plugin/
+Plugin URI: http://www.n2h.it/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 48 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.2.9
+Version: 1.3
 Author: Davide Pozza
-Author URI: http://www.nothing2hide.net/
+Author URI: http://www.n2h.it/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided. The author will never be liable for any loss of profit, physical or psychical damage, legal problems. The author disclaims any responsibility for any action of final users. It is the final user's responsibility to obey all applicable local, state, and federal laws.
 
 */
@@ -76,6 +76,10 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.3
+- Added new option "Not yet translated pages management": you can choose between a 302 redirect and a 503 error on not yet translated pages
+- Better flags layout on admin page
 
 1.2.8
 - fixed some 404 issues reported by Google WebMaster and related to bad parameters attached to the url (usg and rurl)
@@ -314,7 +318,7 @@ define('BLOG_HOME_ESCAPED', str_replace('/', '\\/', BLOG_HOME));
 define('NOT_FOUND',
 '<html><head><title>404 Not found</title></head>
 <body><center><h2>404 Error: content not found</h2></center></body></html>');
-
+define('USE_302', get_option('gltr_use_302'));
 
 $gltr_result = '';
 $gltr_engine = $gltr_available_engines[TRANSLATION_ENGINE];
@@ -493,32 +497,28 @@ function gltr_clean_url_to_translate(){
 }
 
 function gltr_make_server_redirect_page($resource){
-/*
-	if (isset($_GET['gltr_redir'])){		
-		$unavail =
-			'<html><head><title>Translation not available</title>
-			<META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
-			<style>html,body {font-family: arial, verdana, sans-serif; font-size: 14px;margin-top:0px; margin-bottom:0px; height:100%;}</style></head>
-			<body><center><br /><br /><b>This page has not been translated yet.<br /><br />The translation process could take a while: in the meantime a semi-automatic translation will be provided in a few seconds.</b><br /><br /><a href="'.get_settings('home').'">Home page</a></center>
-			<script type="text/javascript"><!--
-			setTimeout("Redirect()",5000);
-			function Redirect(){
-			 location.href = "{RESOURCE}";
-			}
-			// --></script></body></html>';
-	  $message = str_replace('{RESOURCE}',$resource,$unavail);   
+	if (USE_302){
+	  gltr_debug("gltr_make_server_redirect_page :: redirecting to $resource");
+	  header("Location: $resource", TRUE, 302); 
+	  die();
 	} else {
-		$redirect = gltr_add_get_param(gltr_get_self_url(), 'gltr_redir', urlencode($resource));
-		gltr_debug("gltr_make_server_redirect_page :: redirecting to $redirect");
-		header("Location: $redirect", TRUE, 302);	
-		die();
-  }
-  return $message;
-*/  
-	gltr_debug("gltr_make_server_redirect_page :: redirecting to $resource");
-	header("Location: $resource", TRUE, 302);	
-	die();
-}
+	  $unavail =
+	    '<html><head><title>Translation not available</title>
+	    <style>html,body {font-family: arial, verdana, sans-serif; font-size: 14px;margin-top:0px; margin-bottom:0px; height:100%;}</style></head>
+	    <body><center><br /><br /><b>This page has not been translated yet.<br /><br />The translation process could take a while: in the meantime a semi-automatic translation will be provided in a few seconds.</b><br /><br /><a href="'.get_settings('home').'">Home page</a></center>
+	    <script type="text/javascript"><!--
+	    setTimeout("Redirect()",5000);
+	    function Redirect(){
+	     location.href = "{RESOURCE}";
+	    }
+	    // --></script></body></html>';
+	
+	  header('HTTP/1.1 503 Service Temporarily Unavailable');//thanks Martin!
+	  header('Retry-After: 3600');     
+	  $message = str_replace('{RESOURCE}',$resource,$unavail);   
+	  die($message);  		
+	}	
+}  
 
 function gltr_add_get_param($url,$param, $value){
   if (strpos($url,'?')===false)
