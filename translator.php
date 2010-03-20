@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.n2h.it/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 48 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.3
+Version: 1.3.1
 Author: Davide Pozza
 Author URI: http://www.n2h.it/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided. The author will never be liable for any loss of profit, physical or psychical damage, legal problems. The author disclaims any responsibility for any action of final users. It is the final user's responsibility to obey all applicable local, state, and federal laws.
@@ -76,6 +76,10 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.3.1
+- Removed N2H Link
+- Fixed regexp patterns
 
 1.3
 - Added new option "Not yet translated pages management": you can choose between a 302 redirect and a 503 error on not yet translated pages
@@ -933,14 +937,8 @@ function gltr_get_flags_bar() {
   if ($num_cols == 0)
     $num_cols = count($translations);
     
-  //***************************************************************************************
-  //Yes, you can remove my website link from the flags bar, but you should put it on another place 
-  //on your blog, for example on your sidebar (i.e. inside your blogroll).
-  //This plugin is hard to develop and maintain and I freely redistribute it; I'm only asking 
-  //you a backlink to my website (http://www.nothing2hide.net). This will be very appreciated!! 
-  //Thanks!    
-  //
-  $n2hlink = "<a style=\"font-size:9px;\" href=\"http://www.n2h.it\">By N2H</a>";
+  //$n2hlink = "<a style=\"font-size:9px;\" href=\"http://www.n2h.it\">By N2H</a>";
+  $n2hlink = "";
   if (HTML_BAR_TAG == 'MAP'){
     $buf .="</map>";
     $buf .= "<img style='border:0px;' src='$merged_image_url' usemap='#gltr_flags_map'/></div>";

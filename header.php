@@ -313,7 +313,7 @@ $googleEngine = new gltr_translation_engine(
 	//'http://translate.google.com/translate?hl=en&ie=UTF-8&oe=UTF-8&langpair=${SRCLANG}|${DESTLANG}&u=${URL}&prev=/language_tools',
 	'http://translate.google.com/translate?hl=en&sl=${SRCLANG}&tl=${DESTLANG}&u=${URL}',
    array(
-    "/=[^\s|>]*u=(.*?)&amp;([^\s|>|#]*)([#]{0,1}[^\s|>]*)([\s|>]{1})/"
+    "/=[^\s|>]*u=(http.*?)&amp;([^\s|>|#]*)([#]{0,1}[^\s|>]*)([\s|>]{1})/"
 	),
 	"href=\"\\1\" ",
 	array(
