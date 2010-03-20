@@ -5,7 +5,7 @@ Contributors:
 Donate link: http://www.n2h.it/donate_global_translator.php
 Requires at least: 2.3
 Tested up to: 2.9
-Stable Tag: 1.3
+Stable Tag: 1.3.1
 
 Automatically translates your blog in 34 different languages!
 
@@ -70,6 +70,10 @@ After this simple operation, a bar containing the flags that represents all the 
 for your language will appear on your blog.
 
 == Changelog ==
+
+= 1.3.1 =
+* Removed N2H Link
+* Fixed regexp patterns
 
 = 1.3 =
 * Added new option "Not yet translated pages management": you can choose between a 302 redirect and a 503 error on not yet translated pages
