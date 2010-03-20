@@ -7,11 +7,11 @@ Requires at least: 2.3
 Tested up to: 2.9
 Stable Tag: 1.3.1
 
-Automatically translates your blog in 34 different languages!
+Automatically translates your blog in 48 different languages!
 
 == Description ==
 
-Global Translator automatically translates your blog in the following 41 different languages:
+Global Translator automatically translates your blog in the following 48 different languages:
 Italian, Korean, Chinese (Simplified), Portuguese, English, German, French, Spanish, Japanese, 
 Arabic, Russian, Greek, Dutch, Bulgarian, Czech, Croatian, Danish, Finnish, Hindi, Polish, Romanian, 
 Swedish, Norwegian, Catalan, Filipino, Hebrew, Indonesian, Latvian, Lithuanian, Serbian, Slovak, 
