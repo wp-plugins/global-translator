@@ -313,7 +313,7 @@ $googleEngine = new gltr_translation_engine(
 	//'http://translate.google.com/translate?hl=en&ie=UTF-8&oe=UTF-8&langpair=${SRCLANG}|${DESTLANG}&u=${URL}&prev=/language_tools',
 	'http://translate.google.com/translate?hl=en&sl=${SRCLANG}&tl=${DESTLANG}&u=${URL}',
    array(
-    "/=[^\s|>]*u=(http.*?)&amp;([^\s|>|#]*)([#]{0,1}[^\s|>]*)([\s|>]{1})/"
+    "/=[^\s|>]*u=(http.*?)&amp;([^\s|>]*)([\s|>]{1})/"
 	),
 	"href=\"\\1\" ",
 	array(
@@ -654,5 +654,5 @@ $gltr_stale_dir = WP_CONTENT_DIR . "/gt-cache/stale";
 $gltr_merged_image=dirname(__file__) . '/gltr_image_map.png';
 $gltr_uri_index = array();
 
-$gltr_VERSION='1.3';
+$gltr_VERSION='1.3.2';
 ?>
