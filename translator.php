@@ -3,7 +3,7 @@
 Plugin Name: Global Translator
 Plugin URI: http://www.n2h.it/wp-plugins/wordpress-global-translator-plugin/
 Description: Automatically translates a blog in 48 different languages by wrapping four different online translation engines (Google Translation Engine, Babelfish Translation Engine, FreeTranslations.com, Promt). After uploading this plugin click 'Activate' (to the right) and then afterwards you must <a href="options-general.php?page=global-translator/options-translator.php">visit the options page</a> and enter your blog language to enable the translator.
-Version: 1.3.1
+Version: 1.3.2
 Author: Davide Pozza
 Author URI: http://www.n2h.it/
 Disclaimer: Use at your own risk. No warranty expressed or implied is provided. The author will never be liable for any loss of profit, physical or psychical damage, legal problems. The author disclaims any responsibility for any action of final users. It is the final user's responsibility to obey all applicable local, state, and federal laws.
@@ -76,6 +76,9 @@ plugin "Global Translator", and click the "Deactivate" button.
 
 
 Change Log
+
+1.3.2
+- Fixed url fragments cleaning
 
 1.3.1
 - Removed N2H Link
@@ -665,12 +668,17 @@ function gltr_is_connection_allowed(){
 
 function gltr_clean_link($matches){
   if (TRANSLATION_ENGINE == 'google'){
-    $res = "=\"" . urldecode($matches[1]) . $matches[3] . "\"";
-    if ($matches[4] == '>') $res .= ">";
+  	preg_match("/([^#]*)(#.*)/",$matches[2], $mymatches);
+  	if (isset($mymatches[2])){
+  		$fragment=$mymatches[2]; 		
+  	}
+  	$url = urldecode($matches[1]);
+    $res = "=\"" . $url . $fragment . "\"";
+    if ($matches[3] == '>') $res .= ">";
   } else {
     $res = "=\"" . urldecode($matches[1]) . "\"";
   }
-  return $res;
+	return $res;
 }
 
 function gltr_clean_translated_page($buf, $lang) {
