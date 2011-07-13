@@ -38,9 +38,6 @@ For the latest information and changelog visit the website
 http://www.n2h.it/wp-plugins/wordpress-global-translator-plugin/
 
 
-**A Pro version with full support and additional features is also available!** 
-Learn more by visiting this page: http://www.n2h.it/global-translator-pro/
-
 
 == Installation ==
 
